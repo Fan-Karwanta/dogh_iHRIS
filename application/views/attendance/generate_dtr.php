@@ -1,3 +1,56 @@
+<?php
+/**
+ * Calculate total working days from DTR data
+ * Handles full days, half days, and weekend/holiday work
+ */
+function calculateWorkingDays($time_data, $selected_year, $selected_month) {
+    $total_days = 0;
+    $b = 0;
+    $days_in_month = date('t', strtotime($selected_year . '-' . date('m', strtotime($selected_month . '-01')) . '-01'));
+    
+    for ($i = 1; $i <= $days_in_month; $i++) {
+        $current_date = $selected_year . '-' . str_pad(date('m', strtotime($selected_month . '-01')), 2, '0', STR_PAD_LEFT) . '-' . str_pad($i, 2, '0', STR_PAD_LEFT);
+        $is_weekend = isWeekend($current_date);
+        $is_holiday = isPhilippineHoliday($current_date);
+        
+        $day_value = 0;
+        
+        // Check if there's attendance data for this day
+        if (!empty($time_data[$b]->date) && date('j', strtotime($time_data[$b]->date)) == $i) {
+            $morning_in = !empty($time_data[$b]->morning_in);
+            $morning_out = !empty($time_data[$b]->morning_out);
+            $afternoon_in = !empty($time_data[$b]->afternoon_in);
+            $afternoon_out = !empty($time_data[$b]->afternoon_out);
+            
+            // Count attendance sessions
+            $morning_session = $morning_in && $morning_out;
+            $afternoon_session = $afternoon_in && $afternoon_out;
+            
+            // Calculate day value based on sessions present
+            if ($morning_session && $afternoon_session) {
+                $day_value = 1.0; // Full day
+            } elseif ($morning_session || $afternoon_session) {
+                $day_value = 0.5; // Half day
+            } elseif ($morning_in || $morning_out || $afternoon_in || $afternoon_out) {
+                // Partial attendance (at least one time entry)
+                $day_value = 0.5; // Count as half day for incomplete entries
+            }
+            
+            $b++;
+        } else {
+            // No attendance data for this day
+            // For regular workdays without data, count as 0
+            // For weekends/holidays, only count if there was supposed to be work
+            $day_value = 0;
+        }
+        
+        $total_days += $day_value;
+    }
+    
+    return $total_days;
+}
+?>
+
 <div class="page-header">
     <h4 class="page-title"><?= $title ?></h4>
     <ul class="breadcrumbs">
@@ -342,14 +395,14 @@
                                         <?php endif ?>
                                     <?php else : ?>
                                         <tr>
-                                            <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 11px;"><?= $i ?></td>
+                                            <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 11px; font-family: 'Times New Roman', serif; color: black;"><?= $i ?></td>
                                             <?php if ($is_weekend || $is_holiday) : ?>
-                                                <td colspan="6" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 10px;"><strong><?= $is_weekend ? 'WEEKEND' : 'HOLIDAY' ?></strong></td>
+                                                <td colspan="6" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 10px; font-family: 'Times New Roman', serif; color: black;"><strong><?= $is_weekend ? 'WEEKEND' : 'HOLIDAY' ?></strong></td>
                                             <?php else : ?>
-                                                <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 11px;"></td>
-                                                <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 11px;"></td>
-                                                <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 11px;"></td>
-                                                <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 11px;"></td>
+                                                <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 11px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 11px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 11px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 11px; font-family: 'Times New Roman', serif; color: black;"></td>
                                                 <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 11px;"></td>
                                                 <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 11px;"></td>
                                             <?php endif; ?>
@@ -357,6 +410,17 @@
                                     <?php endif ?>
 
                                 <?php endfor ?>
+                                
+                                <!-- Total Working Days Row -->
+                                <?php $total_working_days = calculateWorkingDays($time, $selected_year, $selected_month); ?>
+                                <tr style="background-color: #f8f9fa; font-weight: bold;">
+                                    <td colspan="6" style="border: 1px solid black; padding: 5px; text-align: left; font-size: 11px; font-family: 'Times New Roman', serif; color: black;">
+                                        <strong>Total Number of Days Present</strong>
+                                    </td>
+                                    <td style="border: 1px solid black; padding: 5px; text-align: center; font-size: 11px; font-family: 'Times New Roman', serif; color: black;">
+                                        <strong><?= number_format($total_working_days, 1) ?></strong>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                         
@@ -372,7 +436,7 @@
                             <tr>
                                 <td colspan="7" style="padding: 10px 5px;">
                                     <div style="text-align: center;">
-                                        <div style="border-bottom: 1px solid black; width: 250px; margin: 0 auto 2px auto; height: 15px;"></div>
+                                        <!--<div style="border-bottom: 1px solid black; width: 250px; margin: 0 auto 2px auto; height: 15px;"></div>-->
                                         <strong style="font-size: 11px; font-family: 'Times New Roman', serif; text-decoration: underline; color: black;"><?= strtoupper(!empty($row->middlename[0]) ? $row->firstname . ' ' . $row->middlename[0] . '. ' . $row->lastname : $row->firstname . ' ' . $row->lastname) ?></strong><br>
                                         <span style="font-size: 11px; font-family: 'Times New Roman', serif; color: black;">Employee</span>
                                     </div>
@@ -389,7 +453,7 @@
                                 <td colspan="7" style="padding: 10px 5px;">
                                     <div style="text-align: center;">
                                         <div style="border-bottom: 1px solid black; width: 250px; margin: 0 auto 2px auto; height: 15px;"></div>
-                                        <strong style="font-size: 11px; font-family: 'Times New Roman', serif; color: black;"></strong><br>
+                                        <!--<strong style="font-size: 11px; font-family: 'Times New Roman', serif; color: black;"></strong><br>-->
                                         <span style="font-size: 11px; font-family: 'Times New Roman', serif; color: black;">Immediate Supervisor</span>
                                     </div>
                                 </td>
@@ -404,7 +468,7 @@
                             <tr>
                                 <td colspan="7" style="padding: 10px 5px;">
                                     <div style="text-align: center;">
-                                        <div style="border-bottom: 1px solid black; width: 250px; margin: 0 auto 2px auto; height: 15px;"></div>
+                                        <!--<div style="border-bottom: 1px solid black; width: 250px; margin: 0 auto 2px auto; height: 15px;"></div>-->
                                         <strong style="font-size: 11px; font-family: 'Times New Roman', serif; text-decoration: underline; color: black;">GLINARD L. QUEZADA, MD, FPSGS, MBA-HA</strong><br>
                                         <span style="font-size: 11px; font-family: 'Times New Roman', serif; color: black;">Medical Center Chief I</span>
                                     </div>
@@ -589,6 +653,16 @@
                                         </tr>
                                     <?php endif ?>
                                 <?php endfor ?>
+                                
+                                <!-- Total Working Days Row -->
+                                <tr style="background-color: #f8f9fa; font-weight: bold;">
+                                    <td colspan="6" style="border: 1px solid black; padding: 5px; text-align: left; font-size: 11px; font-family: 'Times New Roman', serif; color: black;">
+                                        <strong>Total Number of Days Present</strong>
+                                    </td>
+                                    <td style="border: 1px solid black; padding: 5px; text-align: center; font-size: 11px; font-family: 'Times New Roman', serif; color: black;">
+                                        <strong><?= number_format($total_working_days, 1) ?></strong>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                         
@@ -604,7 +678,7 @@
                             <tr>
                                 <td colspan="7" style="padding: 10px 5px;">
                                     <div style="text-align: center;">
-                                        <div style="border-bottom: 1px solid black; width: 250px; margin: 0 auto 2px auto; height: 15px;"></div>
+                                        <!--<div style="border-bottom: 1px solid black; width: 250px; margin: 0 auto 2px auto; height: 15px;"></div>-->
                                         <strong style="font-size: 11px; font-family: 'Times New Roman', serif; text-decoration: underline; color: black;"><?= strtoupper(!empty($row->middlename[0]) ? $row->firstname . ' ' . $row->middlename[0] . '. ' . $row->lastname : $row->firstname . ' ' . $row->lastname) ?></strong><br>
                                         <span style="font-size: 11px; font-family: 'Times New Roman', serif; color: black;">Employee</span>
                                     </div>
@@ -621,7 +695,7 @@
                                 <td colspan="7" style="padding: 10px 5px;">
                                     <div style="text-align: center;">
                                         <div style="border-bottom: 1px solid black; width: 250px; margin: 0 auto 2px auto; height: 15px;"></div>
-                                        <strong style="font-size: 11px; font-family: 'Times New Roman', serif; color: black;"></strong><br>
+                                        <!--<strong style="font-size: 11px; font-family: 'Times New Roman', serif; color: black;"></strong><br> -->
                                         <span style="font-size: 11px; font-family: 'Times New Roman', serif; color: black;">Immediate Supervisor</span>
                                     </div>
                                 </td>
@@ -636,7 +710,7 @@
                             <tr>
                                 <td colspan="7" style="padding: 10px 5px;">
                                     <div style="text-align: center;">
-                                        <div style="border-bottom: 1px solid black; width: 250px; margin: 0 auto 2px auto; height: 15px;"></div>
+                                        <!--<div style="border-bottom: 1px solid black; width: 250px; margin: 0 auto 2px auto; height: 15px;"></div>-->
                                         <strong style="font-size: 11px; font-family: 'Times New Roman', serif; text-decoration: underline; color: black;">GLINARD L. QUEZADA, MD, FPSGS, MBA-HA</strong><br>
                                         <span style="font-size: 11px; font-family: 'Times New Roman', serif; color: black;">Medical Center Chief I</span>
                                     </div>

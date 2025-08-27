@@ -27,8 +27,15 @@ class Dashboard extends CI_Controller
 		}
 
 		$data['person'] = $this->dashboardModel->personnel();
-		// $data['teaching'] = $this->dashboardModel->teaching();
-		// $data['nonteaching'] = $this->dashboardModel->nonteaching();
+		$data['today_attendance'] = $this->dashboardModel->todayAttendance();
+		$data['today_biometrics'] = $this->dashboardModel->todayBiometrics();
+		$data['monthly_attendance'] = $this->dashboardModel->monthlyAttendance();
+		$data['monthly_biometrics'] = $this->dashboardModel->monthlyBiometrics();
+		$data['attendance_rate'] = $this->dashboardModel->getAttendanceRate();
+		$data['daily_stats'] = $this->dashboardModel->getAttendanceByDay(7);
+		$data['monthly_stats'] = $this->dashboardModel->getMonthlyStats();
+		$data['top_attendees'] = $this->dashboardModel->getTopAttendees();
+		$data['recent_activity'] = $this->dashboardModel->getRecentActivity();
 
 		$data['title'] = 'Dashboard';
 
