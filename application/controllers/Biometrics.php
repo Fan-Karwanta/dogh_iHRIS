@@ -34,12 +34,16 @@ class Biometrics extends CI_Controller
             $row[] = empty($bio->am_out) ? null : date('h:i A', strtotime($bio->am_out));
             $row[] = empty($bio->pm_in) ? null : date('h:i A', strtotime($bio->pm_in));
             $row[] = empty($bio->pm_out) ? null : date('h:i A', strtotime($bio->pm_out));
+            $row[] = isset($bio->undertime_hours) ? $bio->undertime_hours : '0';
+            $row[] = isset($bio->undertime_minutes) ? $bio->undertime_minutes : '0';
             $row[] = !empty($bio->device_code) ? $bio->device_code : 'N/A';
             $row[] = '
                  <div class="form-button-action">
-                    <a type="button" href="' . $bio->fb . '" data-toggle="tooltip" class="btn btn-link btn-primary mt-1 p-1" data-original-title="Facebook URL" target="_blank">
+                
+                <!-- Comment out FB button as of now
+                 <a type="button" href="' . $bio->fb . '" data-toggle="tooltip" class="btn btn-link btn-primary mt-1 p-1" data-original-title="Facebook URL" target="_blank">
                         <i class="fab fa-facebook"></i>
-                    </a>
+                    </a> -->
                     <a type="button" href="#editBio" data-toggle="modal" class="btn btn-link btn-success mt-1 p-1" title="Edit Biometrics" data-id="' . $bio->id . '" onclick="editBio(this)">
                         <i class="fa fa-edit"></i>
                     </a>
@@ -73,14 +77,33 @@ class Biometrics extends CI_Controller
             $this->session->set_flashdata('message', validation_errors());
         } else {
 
+            $am_in = $this->input->post('am_in');
+            $am_out = $this->input->post('am_out');
+            $pm_in = $this->input->post('pm_in');
+            $pm_out = $this->input->post('pm_out');
+            
+            // Calculate undertime
+            $undertime = $this->calculateUndertime($am_in, $am_out, $pm_in, $pm_out);
+            
             $data = array(
                 'date' => $this->input->post('date'),
-                'am_in' => $this->input->post('am_in'),
-                'am_out' => $this->input->post('am_out'),
-                'pm_in' => $this->input->post('pm_in'),
-                'pm_out' => $this->input->post('pm_out'),
-                'bio_id' => $this->input->post('bio_id'),
+                'am_in' => $am_in,
+                'am_out' => $am_out,
+                'pm_in' => $pm_in,
+                'pm_out' => $pm_out,
+                'bio_id' => $this->input->post('bio_id')
             );
+            
+            // Handle full-day absence (null undertime) vs partial attendance
+            if ($undertime === null) {
+                // Full day absence - store null values for blank entry
+                $data['undertime_hours'] = null;
+                $data['undertime_minutes'] = null;
+            } else {
+                // Partial attendance - store calculated undertime
+                $data['undertime_hours'] = $undertime['hours'];
+                $data['undertime_minutes'] = $undertime['minutes'];
+            }
 
             $insert =  $this->biometricsModel->save($data);
 
@@ -125,14 +148,42 @@ class Biometrics extends CI_Controller
         } else {
 
             $id = $this->input->post('id');
+            $am_in = $this->input->post('am_in');
+            $am_out = $this->input->post('am_out');
+            $pm_in = $this->input->post('pm_in');
+            $pm_out = $this->input->post('pm_out');
+            
+            // Check if manual undertime values are provided
+            $manual_undertime_hours = $this->input->post('undertime_hours');
+            $manual_undertime_minutes = $this->input->post('undertime_minutes');
+            
             $data = array(
                 'date' => $this->input->post('date'),
-                'am_in' => $this->input->post('am_in'),
-                'am_out' => $this->input->post('am_out'),
-                'pm_in' => $this->input->post('pm_in'),
-                'pm_out' => $this->input->post('pm_out'),
-                'bio_id' => $this->input->post('bio_id'),
+                'am_in' => $am_in,
+                'am_out' => $am_out,
+                'pm_in' => $pm_in,
+                'pm_out' => $pm_out,
+                'bio_id' => $this->input->post('bio_id')
             );
+            
+            if ($manual_undertime_hours !== null && $manual_undertime_minutes !== null) {
+                // Use manual undertime values
+                $data['undertime_hours'] = (int)$manual_undertime_hours;
+                $data['undertime_minutes'] = (int)$manual_undertime_minutes;
+            } else {
+                // Calculate undertime automatically
+                $undertime = $this->calculateUndertime($am_in, $am_out, $pm_in, $pm_out);
+                
+                if ($undertime === null) {
+                    // Full day absence - store null values for blank entry
+                    $data['undertime_hours'] = null;
+                    $data['undertime_minutes'] = null;
+                } else {
+                    // Partial attendance - store calculated undertime
+                    $data['undertime_hours'] = $undertime['hours'];
+                    $data['undertime_minutes'] = $undertime['minutes'];
+                }
+            }
 
             $update =  $this->biometricsModel->update($data, $id);
 
@@ -294,6 +345,15 @@ class Biometrics extends CI_Controller
                     // Use smart time assignment based on actual time values
                     $assigned_times = $this->smartTimeAssignment($day_entries);
                     
+                    // Handle cases where no time entries exist for this date (full day absence)
+                    // This can happen when CSV has employee records but no actual time logs for certain days
+                    if (empty($assigned_times['am_in']) && empty($assigned_times['am_out']) && 
+                        empty($assigned_times['pm_in']) && empty($assigned_times['pm_out'])) {
+                        // Skip creating records for full day absences during CSV import
+                        // This prevents creating blank entries that would show "8-0" undertime
+                        continue;
+                    }
+                    
                     if (!empty($checkAttend)) {
                         // Update existing record
                         $update_data = array('device_code' => $device_code);
@@ -305,6 +365,24 @@ class Biometrics extends CI_Controller
                         }
                         
                         if (count($update_data) > 1) {
+                            // Calculate undertime with updated data
+                            $final_am_in = !empty($update_data['am_in']) ? $update_data['am_in'] : $checkAttend->am_in;
+                            $final_am_out = !empty($update_data['am_out']) ? $update_data['am_out'] : $checkAttend->am_out;
+                            $final_pm_in = !empty($update_data['pm_in']) ? $update_data['pm_in'] : $checkAttend->pm_in;
+                            $final_pm_out = !empty($update_data['pm_out']) ? $update_data['pm_out'] : $checkAttend->pm_out;
+                            
+                            $undertime = $this->calculateUndertime($final_am_in, $final_am_out, $final_pm_in, $final_pm_out);
+                            
+                            if ($undertime === null) {
+                                // Full day absence - store null values for blank entry
+                                $update_data['undertime_hours'] = null;
+                                $update_data['undertime_minutes'] = null;
+                            } else {
+                                // Partial attendance - store calculated undertime
+                                $update_data['undertime_hours'] = $undertime['hours'];
+                                $update_data['undertime_minutes'] = $undertime['minutes'];
+                            }
+                            
                             $this->biometricsModel->update($update_data, $checkAttend->id);
                         }
                     } else {
@@ -317,6 +395,24 @@ class Biometrics extends CI_Controller
                         
                         foreach ($assigned_times as $slot => $time) {
                             $logs[$slot] = $time;
+                        }
+                        
+                        // Calculate undertime for new record
+                        $undertime = $this->calculateUndertime(
+                            $assigned_times['am_in'] ?? null,
+                            $assigned_times['am_out'] ?? null,
+                            $assigned_times['pm_in'] ?? null,
+                            $assigned_times['pm_out'] ?? null
+                        );
+                        
+                        if ($undertime === null) {
+                            // Full day absence - store null values for blank entry
+                            $logs['undertime_hours'] = null;
+                            $logs['undertime_minutes'] = null;
+                        } else {
+                            // Partial attendance - store calculated undertime
+                            $logs['undertime_hours'] = $undertime['hours'];
+                            $logs['undertime_minutes'] = $undertime['minutes'];
                         }
                         
                         $this->biometricsModel->save($logs);
@@ -393,6 +489,43 @@ class Biometrics extends CI_Controller
             return $a['timestamp'] - $b['timestamp'];
         });
         
+        $entry_count = count($entries);
+        
+        // SPECIAL HANDLING FOR 2 ENTRIES - HALF DAY DETECTION
+        if ($entry_count == 2) {
+            $first_time = $this->timeToMinutes($entries[0]['time']);
+            $second_time = $this->timeToMinutes($entries[1]['time']);
+            
+            // Determine if it's morning half-day or afternoon half-day
+            // If both times are before 2:00 PM (840 minutes), it's likely morning half-day
+            if ($second_time <= 840) {
+                // Morning half-day: assign as am_in and am_out
+                $assigned_times['am_in'] = $entries[0]['time'];
+                $assigned_times['am_out'] = $entries[1]['time'];
+            } 
+            // If first time is after 11:00 AM (660 minutes), it's likely afternoon half-day
+            else if ($first_time >= 660) {
+                // Afternoon half-day: assign as pm_in and pm_out
+                $assigned_times['pm_in'] = $entries[0]['time'];
+                $assigned_times['pm_out'] = $entries[1]['time'];
+            }
+            // If times span across lunch (first before 12:00, second after 1:00), it's full day with missing lunch
+            else if ($first_time < 720 && $second_time > 780) {
+                // Full day with missing lunch break: assign as am_in and pm_out
+                $assigned_times['am_in'] = $entries[0]['time'];
+                $assigned_times['pm_out'] = $entries[1]['time'];
+            }
+            // Default fallback for edge cases
+            else {
+                // Default to morning half-day
+                $assigned_times['am_in'] = $entries[0]['time'];
+                $assigned_times['am_out'] = $entries[1]['time'];
+            }
+            
+            return $assigned_times;
+        }
+        
+        // ORIGINAL LOGIC FOR 1, 3, OR 4+ ENTRIES
         // Separate times into categories based on time ranges
         $morning_in_candidates = array();   // Before 8:00 AM
         $lunch_time_candidates = array();   // 12:00 PM - 1:00 PM
@@ -486,6 +619,112 @@ class Biometrics extends CI_Controller
         }
         
         return $assigned_times;
+    }
+
+    /**
+     * Calculate undertime based on standard work schedule
+     * Standard: 8:00 AM - 5:00 PM (8 hours total)
+     * Morning: 8:00 AM - 12:00 PM (4 hours)
+     * Lunch Break: 12:00 PM - 1:00 PM (excluded)
+     * Afternoon: 1:00 PM - 5:00 PM (4 hours)
+     * 
+     * ABSENCE RULES:
+     * - Full day absence (no time entries): Return null for blank database entry
+     * - Half day absence (missing one complete session): 4 hours undertime
+     * - Full day present: Calculate actual undertime based on late/early times
+     */
+    private function calculateUndertime($am_in, $am_out, $pm_in, $pm_out)
+    {
+        // Check for full day absence - all time entries are empty
+        $has_am_in = !empty($am_in);
+        $has_am_out = !empty($am_out);
+        $has_pm_in = !empty($pm_in);
+        $has_pm_out = !empty($pm_out);
+        
+        // If completely absent (no time entries at all), return null to indicate blank entry
+        if (!$has_am_in && !$has_am_out && !$has_pm_in && !$has_pm_out) {
+            return null; // This will be handled as blank in database and DTR
+        }
+        
+        $undertime_minutes = 0;
+        
+        // Standard work times in minutes from midnight
+        $standard_am_in = 8 * 60;      // 8:00 AM = 480 minutes
+        $standard_am_out = 12 * 60;    // 12:00 PM = 720 minutes
+        $standard_pm_in = 13 * 60;     // 1:00 PM = 780 minutes
+        $standard_pm_out = 17 * 60;    // 5:00 PM = 1020 minutes
+        
+        // Convert time strings to minutes from midnight
+        $actual_am_in = $has_am_in ? $this->timeToMinutes($am_in) : null;
+        $actual_am_out = $has_am_out ? $this->timeToMinutes($am_out) : null;
+        $actual_pm_in = $has_pm_in ? $this->timeToMinutes($pm_in) : null;
+        $actual_pm_out = $has_pm_out ? $this->timeToMinutes($pm_out) : null;
+        
+        // Check if we have complete sessions
+        $has_complete_morning = $has_am_in && $has_am_out;
+        $has_complete_afternoon = $has_pm_in && $has_pm_out;
+        
+        // Calculate morning session undertime
+        if ($has_complete_morning) {
+            // Complete morning session - calculate based on actual times
+            // Late arrival (after 8:00 AM)
+            if ($actual_am_in > $standard_am_in) {
+                $undertime_minutes += ($actual_am_in - $standard_am_in);
+            }
+            
+            // Early departure (before 12:00 PM)
+            if ($actual_am_out < $standard_am_out) {
+                $undertime_minutes += ($standard_am_out - $actual_am_out);
+            }
+        } else if ($has_am_in || $has_am_out) {
+            // Incomplete morning session (only in or only out) = 4 hours undertime
+            $undertime_minutes += 240; // 4 hours = 240 minutes
+        } else {
+            // No morning session at all = 4 hours undertime
+            $undertime_minutes += 240; // 4 hours = 240 minutes
+        }
+        
+        // Calculate afternoon session undertime
+        if ($has_complete_afternoon) {
+            // Complete afternoon session - calculate based on actual times
+            // Late arrival (after 1:00 PM)
+            if ($actual_pm_in > $standard_pm_in) {
+                $undertime_minutes += ($actual_pm_in - $standard_pm_in);
+            }
+            
+            // Early departure (before 5:00 PM)
+            if ($actual_pm_out < $standard_pm_out) {
+                $undertime_minutes += ($standard_pm_out - $actual_pm_out);
+            }
+        } else if ($has_pm_in || $has_pm_out) {
+            // Incomplete afternoon session (only in or only out) = 4 hours undertime
+            $undertime_minutes += 240; // 4 hours = 240 minutes
+        } else {
+            // No afternoon session at all = 4 hours undertime
+            $undertime_minutes += 240; // 4 hours = 240 minutes
+        }
+        
+        // Convert total undertime minutes to hours and minutes
+        $undertime_hours = intval($undertime_minutes / 60);
+        $remaining_minutes = $undertime_minutes % 60;
+        
+        return array(
+            'hours' => $undertime_hours,
+            'minutes' => $remaining_minutes,
+            'total_minutes' => $undertime_minutes
+        );
+    }
+    
+    /**
+     * Convert time string (HH:MM:SS or HH:MM) to minutes from midnight
+     */
+    private function timeToMinutes($time_string)
+    {
+        $time_parts = explode(':', $time_string);
+        $hours = intval($time_parts[0]);
+        $minutes = intval($time_parts[1]);
+        
+        return ($hours * 60) + $minutes;
     }
 
     public function getBio()

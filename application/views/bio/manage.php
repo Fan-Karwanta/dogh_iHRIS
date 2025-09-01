@@ -57,6 +57,8 @@
                                 <th>Morning-Out</th>
                                 <th>Afternoon-In</th>
                                 <th>Afternoon-Out</th>
+                                <th>Undertime Hours</th>
+                                <th>Undertime Minutes</th>
                                 <th>Device Code</th>
                                 <th>Action</th>
                             </tr>
@@ -69,6 +71,8 @@
                                 <th>Morning-Out</th>
                                 <th>Afternoon-In</th>
                                 <th>Afternoon-Out</th>
+                                <th>Undertime Hours</th>
+                                <th>Undertime Minutes</th>
                                 <th>Device Code</th>
                                 <th>Action</th>
                             </tr>

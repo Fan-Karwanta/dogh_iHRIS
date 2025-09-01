@@ -4,8 +4,8 @@ defined('BASEPATH') or exit('No direct script access allowed');
 class BiometricsModel extends CI_Model
 {
     var $table = 'biometrics';
-    var $column_order = array(null, 'firstname', 'lastname', 'middlename', 'date', 'am_in', 'am_out', 'pm_in', 'pm_out', 'device_code'); //set column field database for datatable orderable
-    var $column_search = array('firstname', 'lastname', 'middlename', 'date', 'am_in', 'am_out', 'pm_in', 'pm_out', 'device_code'); //set column field database for datatable searchable 
+    var $column_order = array(null, 'firstname', 'lastname', 'middlename', 'date', 'am_in', 'am_out', 'pm_in', 'pm_out', 'undertime_hours', 'undertime_minutes', 'device_code'); //set column field database for datatable orderable
+    var $column_search = array('firstname', 'lastname', 'middlename', 'date', 'am_in', 'am_out', 'pm_in', 'pm_out', 'undertime_hours', 'undertime_minutes', 'device_code'); //set column field database for datatable searchable 
     var $order = array('biometrics.date' => 'desc'); // default order 
 
     public function __contruct()

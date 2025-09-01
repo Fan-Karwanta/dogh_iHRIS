@@ -92,6 +92,25 @@
                         <label>Afternoon Out</label>
                         <input type="time" class="form-control" name="pm_out" value="16:30" id="pm_out">
                     </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group form-floating-label">
+                                <label>Undertime Hours</label>
+                                <input type="number" class="form-control" name="undertime_hours" value="0" min="0" max="8" id="undertime_hours">
+                                <small class="form-text text-muted">Hours of undertime (0-8)</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-floating-label">
+                                <label>Undertime Minutes</label>
+                                <input type="number" class="form-control" name="undertime_minutes" value="0" min="0" max="59" id="undertime_minutes">
+                                <small class="form-text text-muted">Minutes of undertime (0-59)</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <small><strong>Note:</strong> Undertime is automatically calculated based on the standard 8:00 AM - 5:00 PM schedule. You can manually adjust these values if needed.</small>
+                    </div>
 
             </div>
             <div class="modal-footer">

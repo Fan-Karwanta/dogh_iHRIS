@@ -68,6 +68,8 @@ function editBio(that){
             $('#am_out').val(response.data.am_out != '00:00:00' ? response.data.am_out : '');
             $('#pm_in').val(response.data.pm_in != '00:00:00' ? response.data.pm_in : '');
             $('#pm_out').val(response.data.pm_out != '00:00:00' ? response.data.pm_out : '');
+            $('#undertime_hours').val(response.data.undertime_hours || 0);
+            $('#undertime_minutes').val(response.data.undertime_minutes || 0);
             $('#biometrics_id').val(response.data.id);
         }
     });
