@@ -40,6 +40,10 @@
                         <label>Afternoon Out</label>
                         <input type="time" class="form-control" name="afternoon_out" value="16:30">
                     </div>
+                    <div class="form-group form-floating-label">
+                        <label>Reason for Creating Record <small class="text-muted">(for audit trail)</small></label>
+                        <textarea class="form-control" name="reason" rows="2" placeholder="e.g., Manual entry requested by personnel, Correction of missing record, etc."></textarea>
+                    </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
@@ -91,6 +95,10 @@
                     <div class="form-group form-floating-label">
                         <label>Afternoon Out</label>
                         <input type="time" class="form-control" name="afternoon_out" id="afternoon_out">
+                    </div>
+                    <div class="form-group form-floating-label">
+                        <label>Reason for Update <small class="text-muted">(for audit trail)</small></label>
+                        <textarea class="form-control" name="reason" rows="2" placeholder="e.g., Time correction requested by personnel, Admin adjustment for policy compliance, etc."></textarea>
                     </div>
             </div>
             <div class="modal-footer">

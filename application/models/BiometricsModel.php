@@ -124,21 +124,53 @@ class BiometricsModel extends CI_Model
         return $query->result();
     }
 
-    public function save($data)
+    public function save($data, $reason = null)
     {
-        $this->db->insert('biometrics', $data);
+        $result = $this->db->insert('biometrics', $data);
+        
+        // Log audit trail for CREATE action
+        if ($result && $this->db->affected_rows() > 0) {
+            $this->load->model('AuditTrailModel', 'auditModel');
+            $biometric_id = $this->db->insert_id();
+            $this->auditModel->log_biometric_change($biometric_id, 'CREATE', null, $data, $reason);
+        }
+        
         return $this->db->affected_rows();
     }
-    public function update($data, $id)
+    public function update($data, $id, $reason = null)
     {
+        // Get old data before update for audit trail
+        $old_data = $this->getBiometric($id);
+        $old_array = $old_data ? (array)$old_data : null;
+        
         $this->db->update('biometrics', $data, "id='$id'");
-        return $this->db->affected_rows();
+        $affected_rows = $this->db->affected_rows();
+        
+        // Log audit trail for UPDATE action
+        if ($affected_rows > 0) {
+            $this->load->model('AuditTrailModel', 'auditModel');
+            $this->auditModel->log_biometric_change($id, 'UPDATE', $old_array, $data, $reason);
+        }
+        
+        return $affected_rows;
     }
-    public function delete($id)
+    public function delete($id, $reason = null)
     {
+        // Get data before deletion for audit trail
+        $old_data = $this->getBiometric($id);
+        
         $this->db->where('id', $id);
         $this->db->delete('biometrics');
-        return $this->db->affected_rows();
+        $affected_rows = $this->db->affected_rows();
+        
+        // Log audit trail for DELETE action
+        if ($affected_rows > 0 && $old_data) {
+            $this->load->model('AuditTrailModel', 'auditModel');
+            $old_array = (array)$old_data;
+            $this->auditModel->log_biometric_change($id, 'DELETE', $old_array, null, $reason);
+        }
+        
+        return $affected_rows;
     }
 
     public function getBiometric($id)

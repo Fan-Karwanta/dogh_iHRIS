@@ -36,6 +36,27 @@
                         <p>Biometrics</p>
                     </a>
                 </li>
+                <li class="nav-item <?= $current_page == 'audit_trail' || $current_page == 'audit_reports' ? 'active' : null ?>">
+                    <a data-toggle="collapse" href="#auditMenu">
+                        <i class="fas fa-history"></i>
+                        <p>Audit Trail</p>
+                        <span class="caret"></span>
+                    </a>
+                    <div class="collapse <?= $current_page == 'audit_trail' || $current_page == 'audit_reports' ? 'show' : null ?>" id="auditMenu">
+                        <ul class="nav nav-collapse">
+                            <li class="<?= $current_page == 'audit_trail' ? 'active' : null ?>">
+                                <a href="<?= site_url('admin/audit_trail') ?>">
+                                    <span class="sub-item">Edit History</span>
+                                </a>
+                            </li>
+                            <li class="<?= $current_page == 'audit_reports' ? 'active' : null ?>">
+                                <a href="<?= site_url('admin/audit_reports') ?>">
+                                    <span class="sub-item">Reports & Analytics</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
                 <?php if ($this->ion_auth->is_admin()) : ?>
                     <li class="nav-section">
                         <span class="sidebar-mini-icon">

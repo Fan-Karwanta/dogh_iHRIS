@@ -42,6 +42,9 @@ class Attendance extends CI_Controller
                     <a type="button" href="#editAttendance" data-toggle="modal" class="btn btn-link btn-success mt-1 p-1" title="Edit Attendance" data-id="' . $attend->id . '" onclick="editAttendance(this)">
                         <i class="fa fa-edit"></i>
                     </a>
+                    <a type="button" href="' . site_url("audit_trail/personnel_by_email/" . urlencode($attend->email)) . '" data-toggle="tooltip" class="btn btn-link btn-info mt-1 p-1" data-original-title="View Edit History" target="_blank">
+                        <i class="fas fa-history"></i>
+                    </a>
                     <a type="button" href="' . site_url("attendance/delete/" . $attend->id) . '" data-toggle="tooltip" onclick="return confirm(&quot;Are you sure you want to delete this attendance?&quot);" class="btn btn-link btn-danger mt-1 p-1" data-original-title="Remove">
                         <i class="fa fa-times"></i>
                     </a>
@@ -81,7 +84,8 @@ class Attendance extends CI_Controller
                 'afternoon_out' => $this->input->post('afternoon_out'),
             );
 
-            $insert =  $this->attendanceModel->save($data);
+            $reason = $this->input->post('reason') ? $this->input->post('reason') : 'Manual attendance creation';
+            $insert =  $this->attendanceModel->save($data, $reason);
 
             if ($insert) {
                 $this->session->set_flashdata('success', 'success');
@@ -131,7 +135,8 @@ class Attendance extends CI_Controller
                 'afternoon_out' => $this->input->post('afternoon_out'),
             );
 
-            $update =  $this->attendanceModel->update($data, $id);
+            $reason = $this->input->post('reason') ? $this->input->post('reason') : 'Manual attendance update';
+            $update =  $this->attendanceModel->update($data, $id, $reason);
 
             if ($update) {
                 $this->session->set_flashdata('success', 'success');
@@ -293,14 +298,14 @@ class Attendance extends CI_Controller
 
     public function delete($id)
     {
-
-        $delete = $this->attendanceModel->delete($id);
+        $reason = 'Manual attendance deletion by admin';
+        $delete = $this->attendanceModel->delete($id, $reason);
         $this->session->set_flashdata('success', 'danger');
 
         if ($delete) {
             $this->session->set_flashdata('message', 'Attendance has been deleted!');
         } else {
-            $this->session->set_flashdata('message', 'Something went wrong. This borrower cannot be deleted!');
+            $this->session->set_flashdata('message', 'Something went wrong. This record cannot be deleted!');
         }
         redirect('attendance', 'refresh');
     }

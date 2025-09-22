@@ -21,3 +21,16 @@ $route['admin/generate_dtr/(:num)'] = 'attendance/generate_dtr/$1';
 
 $route['admin/biometrics'] = 'biometrics/index';
 $route['admin/generate_bio'] = 'biometrics/generate_bioreport';
+
+$route['admin/audit_trail'] = 'AuditTrail/index';
+$route['admin/audit_trail/get_audit_data'] = 'AuditTrail/get_audit_data';
+$route['admin/audit_trail/get_personnel_audit_data'] = 'AuditTrail/get_personnel_audit_data';
+$route['admin/audit_trail/personnel/(:num)'] = 'AuditTrail/personnel/$1';
+$route['admin/audit_trail/personnel_by_email/(.+)'] = 'AuditTrail/personnel_by_email/$1';
+$route['admin/audit_trail/personnel_by_bio_id/(:num)'] = 'AuditTrail/personnel_by_bio_id/$1';
+
+$route['admin/audit_trail/get_audit_details'] = 'AuditTrail/get_audit_details';
+$route['admin/audit_trail/export_csv'] = 'AuditTrail/export_csv';
+
+$route['admin/audit_reports'] = 'auditreport/index';
+$route['admin/audit_reports/personnel_analysis'] = 'auditreport/personnel_analysis';

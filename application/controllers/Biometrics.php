@@ -105,7 +105,8 @@ class Biometrics extends CI_Controller
                 $data['undertime_minutes'] = $undertime['minutes'];
             }
 
-            $insert =  $this->biometricsModel->save($data);
+            $reason = $this->input->post('reason');
+            $insert =  $this->biometricsModel->save($data, $reason);
 
             if ($insert) {
                 $this->session->set_flashdata('success', 'success');
@@ -185,7 +186,8 @@ class Biometrics extends CI_Controller
                 }
             }
 
-            $update =  $this->biometricsModel->update($data, $id);
+            $reason = $this->input->post('reason');
+            $update =  $this->biometricsModel->update($data, $id, $reason);
 
             if ($update) {
                 $this->session->set_flashdata('success', 'success');
@@ -741,7 +743,8 @@ class Biometrics extends CI_Controller
     public function delete($id)
     {
 
-        $delete = $this->biometricsModel->delete($id);
+        $reason = $this->input->post('reason') ?: 'Record deleted by admin';
+        $delete = $this->biometricsModel->delete($id, $reason);
         $this->session->set_flashdata('success', 'danger');
 
         if ($delete) {

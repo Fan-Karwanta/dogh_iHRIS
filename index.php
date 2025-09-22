@@ -55,6 +55,9 @@
  */
 	define('ENVIRONMENT', isset($_SERVER['CI_ENV']) ? $_SERVER['CI_ENV'] : 'development');
 
+// Set timezone to Philippines
+date_default_timezone_set('Asia/Manila');
+
 /*
  *---------------------------------------------------------------
  * ERROR REPORTING
