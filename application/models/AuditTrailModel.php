@@ -45,9 +45,16 @@ class AuditTrailModel extends CI_Model
 
     /**
      * Log biometric changes for audit trail
+     * Only logs UPDATE actions - CREATE and DELETE are not tracked
+     * Excludes undertime_hours and undertime_minutes from logging
      */
     public function log_biometric_change($biometric_id, $action, $old_data = null, $new_data = null, $reason = null)
     {
+        // Only log UPDATE actions
+        if ($action !== 'UPDATE') {
+            return false;
+        }
+
         // Get personnel info from biometric record
         $this->db->select('b.*, p.firstname, p.lastname, p.email');
         $this->db->from('biometrics b');
@@ -62,10 +69,18 @@ class AuditTrailModel extends CI_Model
         $personnel_email = $biometric->email ?? 'unknown@email.com';
         $personnel_name = trim(($biometric->firstname ?? '') . ' ' . ($biometric->lastname ?? ''));
 
+        // Fields to exclude from audit trail logging
+        $excluded_fields = ['undertime_hours', 'undertime_minutes'];
+
         // Compare old and new data to identify changed fields
         $changed_fields = [];
-        if ($action === 'UPDATE' && $old_data && $new_data) {
+        if ($old_data && $new_data) {
             foreach ($new_data as $field => $new_value) {
+                // Skip excluded fields
+                if (in_array($field, $excluded_fields)) {
+                    continue;
+                }
+                
                 $old_value = isset($old_data[$field]) ? $old_data[$field] : null;
                 if ($old_value != $new_value) {
                     $changed_fields[] = [
@@ -74,22 +89,6 @@ class AuditTrailModel extends CI_Model
                         'new_value' => $new_value
                     ];
                 }
-            }
-        } elseif ($action === 'CREATE' && $new_data) {
-            foreach ($new_data as $field => $value) {
-                $changed_fields[] = [
-                    'field' => $field,
-                    'old_value' => null,
-                    'new_value' => $value
-                ];
-            }
-        } elseif ($action === 'DELETE' && $old_data) {
-            foreach ($old_data as $field => $value) {
-                $changed_fields[] = [
-                    'field' => $field,
-                    'old_value' => $value,
-                    'new_value' => null
-                ];
             }
         }
 
@@ -119,10 +118,16 @@ class AuditTrailModel extends CI_Model
     }
 
     /**
-     * Log attendance changes for audit trail (keeping for backward compatibility)
+     * Log attendance changes for audit trail
+     * Only logs UPDATE actions - CREATE and DELETE are not tracked
      */
     public function log_attendance_change($attendance_id, $action, $old_data = null, $new_data = null, $reason = null)
     {
+        // Only log UPDATE actions
+        if ($action !== 'UPDATE') {
+            return false;
+        }
+
         // Get personnel info from attendance record
         $this->db->select('a.*, p.firstname, p.lastname, p.email');
         $this->db->from('attendance a');
@@ -139,7 +144,7 @@ class AuditTrailModel extends CI_Model
 
         // Compare old and new data to identify changed fields
         $changed_fields = [];
-        if ($action === 'UPDATE' && $old_data && $new_data) {
+        if ($old_data && $new_data) {
             foreach ($new_data as $field => $new_value) {
                 $old_value = isset($old_data[$field]) ? $old_data[$field] : null;
                 if ($old_value != $new_value) {
@@ -149,22 +154,6 @@ class AuditTrailModel extends CI_Model
                         'new_value' => $new_value
                     ];
                 }
-            }
-        } elseif ($action === 'CREATE' && $new_data) {
-            foreach ($new_data as $field => $value) {
-                $changed_fields[] = [
-                    'field' => $field,
-                    'old_value' => null,
-                    'new_value' => $value
-                ];
-            }
-        } elseif ($action === 'DELETE' && $old_data) {
-            foreach ($old_data as $field => $value) {
-                $changed_fields[] = [
-                    'field' => $field,
-                    'old_value' => $value,
-                    'new_value' => null
-                ];
             }
         }
 

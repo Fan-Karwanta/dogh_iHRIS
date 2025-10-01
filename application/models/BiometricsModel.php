@@ -4,8 +4,8 @@ defined('BASEPATH') or exit('No direct script access allowed');
 class BiometricsModel extends CI_Model
 {
     var $table = 'biometrics';
-    var $column_order = array(null, 'firstname', 'lastname', 'middlename', 'date', 'am_in', 'am_out', 'pm_in', 'pm_out', 'undertime_hours', 'undertime_minutes', 'device_code'); //set column field database for datatable orderable
-    var $column_search = array('firstname', 'lastname', 'middlename', 'date', 'am_in', 'am_out', 'pm_in', 'pm_out', 'undertime_hours', 'undertime_minutes', 'device_code'); //set column field database for datatable searchable 
+    var $column_order = array(null, 'firstname', 'lastname', 'middlename', 'date', 'am_in', 'am_out', 'pm_in', 'pm_out', 'undertime_hours', 'undertime_minutes'); //set column field database for datatable orderable
+    var $column_search = array('firstname', 'lastname', 'middlename', 'date', 'am_in', 'am_out', 'pm_in', 'pm_out', 'undertime_hours', 'undertime_minutes'); //set column field database for datatable searchable 
     var $order = array('biometrics.date' => 'desc'); // default order 
 
     public function __contruct()
@@ -128,12 +128,7 @@ class BiometricsModel extends CI_Model
     {
         $result = $this->db->insert('biometrics', $data);
         
-        // Log audit trail for CREATE action
-        if ($result && $this->db->affected_rows() > 0) {
-            $this->load->model('AuditTrailModel', 'auditModel');
-            $biometric_id = $this->db->insert_id();
-            $this->auditModel->log_biometric_change($biometric_id, 'CREATE', null, $data, $reason);
-        }
+        // CREATE actions are not logged in audit trail
         
         return $this->db->affected_rows();
     }
@@ -156,19 +151,11 @@ class BiometricsModel extends CI_Model
     }
     public function delete($id, $reason = null)
     {
-        // Get data before deletion for audit trail
-        $old_data = $this->getBiometric($id);
+        // DELETE actions are not logged in audit trail
         
         $this->db->where('id', $id);
         $this->db->delete('biometrics');
         $affected_rows = $this->db->affected_rows();
-        
-        // Log audit trail for DELETE action
-        if ($affected_rows > 0 && $old_data) {
-            $this->load->model('AuditTrailModel', 'auditModel');
-            $old_array = (array)$old_data;
-            $this->auditModel->log_biometric_change($id, 'DELETE', $old_array, null, $reason);
-        }
         
         return $affected_rows;
     }

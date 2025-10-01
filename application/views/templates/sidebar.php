@@ -36,6 +36,27 @@
                         <p>Biometrics</p>
                     </a>
                 </li>
+                <li class="nav-item <?= $current_page == 'generate_dtr' || $current_page == 'generate_bulk_dtr' ? 'active' : null ?>">
+                    <a data-toggle="collapse" href="#dtrMenu">
+                        <i class="fas fa-file-alt"></i>
+                        <p>DTR Reports</p>
+                        <span class="caret"></span>
+                    </a>
+                    <div class="collapse <?= $current_page == 'generate_dtr' || $current_page == 'generate_bulk_dtr' ? 'show' : null ?>" id="dtrMenu">
+                        <ul class="nav nav-collapse">
+                            <li class="<?= $current_page == 'generate_dtr' ? 'active' : null ?>">
+                                <a href="<?= site_url('attendance/generate_dtr') ?>">
+                                    <span class="sub-item">Individual DTR</span>
+                                </a>
+                            </li>
+                            <li class="<?= $current_page == 'generate_bulk_dtr' ? 'active' : null ?>">
+                                <a href="<?= site_url('attendance/generate_bulk_dtr') ?>">
+                                    <span class="sub-item">Bulk DTR (All Personnel)</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
                 <li class="nav-item <?= $current_page == 'audit_trail' || $current_page == 'audit_reports' ? 'active' : null ?>">
                     <a data-toggle="collapse" href="#auditMenu">
                         <i class="fas fa-history"></i>

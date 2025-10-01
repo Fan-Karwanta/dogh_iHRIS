@@ -17,7 +17,7 @@
                     <div class="form-group form-floating-label">
                         <label>Select Personnel</label>
                         <select class="form-control" name="bio_id" id="basic" style="width:100%;" required>
-                            <optgroup label="SNHS Personnel">
+                            <optgroup label="DOGH Personnel">
                                 <?php foreach ($person as $row) : ?>
                                     <option value="<?= $row->bio_id ?>"><?= $row->lastname . ', ' . $row->firstname . ' ' . $row->middlename ?></option>
                                 <?php endforeach ?>
@@ -69,7 +69,7 @@
                     <div class="form-group form-floating-label">
                         <label>Select Personnel</label>
                         <select class="form-control" name="bio_id" id="basic2" style="width:100%;" required>
-                            <optgroup label="SNHS Personnel">
+                            <optgroup label="DOGH Personnel">
                                 <?php foreach ($person as $row) : ?>
                                     <option value="<?= $row->bio_id ?>"><?= $row->lastname . ', ' . $row->firstname . ' ' . $row->middlename ?></option>
                                 <?php endforeach ?>

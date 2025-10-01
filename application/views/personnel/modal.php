@@ -46,6 +46,28 @@
                         <label>Email Address</label>
                         <input type="email" class="form-control" name="email" required>
                     </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group form-floating-label">
+                                <label>Employment Type</label>
+                                <select class="form-control" name="employment_type" required>
+                                    <option value="Regular">Regular</option>
+                                    <option value="Contract of Service">Contract of Service</option>
+                                    <option value="COS / JO">COS / JO</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-floating-label">
+                                <label>Salary Grade</label>
+                                <input type="number" class="form-control" name="salary_grade" min="1" max="33">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group form-floating-label">
+                        <label>Schedule Type</label>
+                        <input type="text" class="form-control" name="schedule_type" value="8:00 AM - 5:00 PM">
+                    </div>
                     <div class="form-group form-floating-label">
                         <label>Facebook URL</label>
                         <input type="url" class="form-control" name="fb_url">
@@ -108,6 +130,28 @@
                         <label>Email Address</label>
                         <input type="email" class="form-control" name="email" required id="email">
                     </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group form-floating-label">
+                                <label>Employment Type</label>
+                                <select class="form-control" name="employment_type" id="employment_type" required>
+                                    <option value="Regular">Regular</option>
+                                    <option value="Contract of Service">Contract of Service</option>
+                                    <option value="COS / JO">COS / JO</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-floating-label">
+                                <label>Salary Grade</label>
+                                <input type="number" class="form-control" name="salary_grade" id="salary_grade" min="1" max="33">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group form-floating-label">
+                        <label>Schedule Type</label>
+                        <input type="text" class="form-control" name="schedule_type" id="schedule_type">
+                    </div>
                     <div class="form-group form-floating-label">
                         <label>Facebook URL</label>
                         <input type="url" class="form-control" name="fb_url" id="fb_url">
@@ -145,7 +189,11 @@
                         <label>Upload CSV</label>
                         <input type="file" class="form-control" name="import_file" accept=".csv" required>
                     </div>
-                    <small>Please use this format. <a href="<?= site_url('assets/backup/Personnel.csv') ?>" download>CSV File</a></small>
+                    <div class="alert alert-info">
+                        <strong>CSV Format Required:</strong><br>
+                        <small>Timestamp, Biometrics ID, Employee ID, Last Name, First Name, Middle Name, Type of Employment, Position, Salary Grade, Email Address, Type of Schedule</small><br>
+                        <small class="text-muted">Note: Employee ID column will be ignored as it duplicates Biometrics ID</small>
+                    </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>

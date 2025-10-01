@@ -18,16 +18,95 @@
             <span class="btn-label">
                 <i class="fas fa-file-import"></i>
             </span>
-            Import Pesonnel
+            Import Personnel
         </a>
         <a href="#add" data-toggle="modal" class="btn btn-primary btn-border btn-round btn-sm">
             <span class="btn-label">
                 <i class="far fa-address-book"></i>
             </span>
-            Add Pesonnel
+            Add Personnel
         </a>
     </div>
+</div>
 
+<!-- Personnel Statistics Dashboard -->
+<div class="row">
+    <div class="col-sm-6 col-md-3">
+        <div class="card card-stats card-round">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-icon">
+                        <div class="icon-big text-center icon-primary bubble-shadow-small">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+                    <div class="col col-stats ml-3 ml-sm-0">
+                        <div class="numbers">
+                            <p class="card-category">Total Personnel</p>
+                            <h4 class="card-title"><?= isset($statistics) ? number_format($statistics->total) : '0' ?></h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-md-3">
+        <div class="card card-stats card-round">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-icon">
+                        <div class="icon-big text-center icon-success bubble-shadow-small">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                    </div>
+                    <div class="col col-stats ml-3 ml-sm-0">
+                        <div class="numbers">
+                            <p class="card-category">Active Personnel</p>
+                            <h4 class="card-title"><?= isset($statistics) ? number_format($statistics->active) : '0' ?></h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-md-3">
+        <div class="card card-stats card-round">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-icon">
+                        <div class="icon-big text-center icon-info bubble-shadow-small">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                    </div>
+                    <div class="col col-stats ml-3 ml-sm-0">
+                        <div class="numbers">
+                            <p class="card-category">Regular Employees</p>
+                            <h4 class="card-title"><?= isset($statistics) ? number_format($statistics->regular) : '0' ?></h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-md-3">
+        <div class="card card-stats card-round">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-icon">
+                        <div class="icon-big text-center icon-warning bubble-shadow-small">
+                            <i class="fas fa-user-clock"></i>
+                        </div>
+                    </div>
+                    <div class="col col-stats ml-3 ml-sm-0">
+                        <div class="numbers">
+                            <p class="card-category">Contract Personnel</p>
+                            <h4 class="card-title"><?= isset($statistics) ? number_format($statistics->contract) : '0' ?></h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 <div class="row">
     <div class="col-md-12">
@@ -43,6 +122,9 @@
                                 <th>No</th>
                                 <th>Fullname</th>
                                 <th>Position</th>
+                                <th>Employment Type</th>
+                                <th>Salary Grade</th>
+                                <th>Schedule</th>
                                 <th>Email</th>
                                 <th>Biometrics ID</th>
                                 <th>Status</th>
@@ -54,6 +136,9 @@
                                 <th>No</th>
                                 <th>Full name</th>
                                 <th>Position</th>
+                                <th>Employment Type</th>
+                                <th>Salary Grade</th>
+                                <th>Schedule</th>
                                 <th>Email</th>
                                 <th>Biometrics ID</th>
                                 <th>Status</th>
@@ -67,6 +152,15 @@
                                     <td><?= $no ?></td>
                                     <td><a href="<?= site_url('admin/personnel_attendace/') . $row->id ?>"><?= htmlspecialchars($row->lastname, ENT_QUOTES, 'UTF-8') . ', ' . htmlspecialchars($row->firstname, ENT_QUOTES, 'UTF-8') . ' ' . htmlspecialchars($row->middlename, ENT_QUOTES, 'UTF-8') ?></a></td>
                                     <td><?= htmlspecialchars($row->position, ENT_QUOTES, 'UTF-8'); ?></td>
+                                    <td>
+                                        <?php 
+                                        $employment_type = isset($row->employment_type) ? $row->employment_type : 'Regular';
+                                        $badge_class = $employment_type == 'Regular' ? 'badge-success' : 'badge-warning';
+                                        ?>
+                                        <span class="badge <?= $badge_class ?>"><?= htmlspecialchars($employment_type, ENT_QUOTES, 'UTF-8'); ?></span>
+                                    </td>
+                                    <td><?= isset($row->salary_grade) ? 'SG ' . $row->salary_grade : 'N/A' ?></td>
+                                    <td><small><?= isset($row->schedule_type) ? htmlspecialchars($row->schedule_type, ENT_QUOTES, 'UTF-8') : '8:00 AM - 5:00 PM' ?></small></td>
                                     <td><a href="mailto:<?= htmlspecialchars($row->email, ENT_QUOTES, 'UTF-8'); ?>"><?= htmlspecialchars($row->email, ENT_QUOTES, 'UTF-8'); ?></a></td>
                                     <td><?= $row->bio_id ?></td>
                                     <td><?= $row->status == 1 ? '<span class="badge badge-primary">Active</span>' : '<span class="badge badge-danger">Inactive</span>' ?></td>
@@ -100,3 +194,68 @@
 </div>
 
 <?php $this->load->view('personnel/modal') ?>
+
+<script>
+function editPersonnel(element) {
+    var id = $(element).data('id');
+    
+    // Make AJAX request to get personnel data
+    $.ajax({
+        url: '<?= site_url("personnel/getPersonnel") ?>',
+        type: 'POST',
+        data: { id: id },
+        dataType: 'json',
+        success: function(response) {
+            if (response.data) {
+                var personnel = response.data;
+                
+                // Populate form fields
+                $('#personnel_id').val(personnel.id);
+                $('#bio').val(personnel.bio_id);
+                $('#lname').val(personnel.lastname);
+                $('#fname').val(personnel.firstname);
+                $('#mname').val(personnel.middlename);
+                $('#position').val(personnel.position);
+                $('#email').val(personnel.email);
+                $('#fb_url').val(personnel.fb);
+                $('#status').val(personnel.status);
+                
+                // Populate new fields with fallback values
+                $('#employment_type').val(personnel.employment_type || 'Regular');
+                $('#salary_grade').val(personnel.salary_grade || '');
+                $('#schedule_type').val(personnel.schedule_type || '8:00 AM - 5:00 PM');
+                
+                // Show modal
+                $('#edit').modal('show');
+            }
+        },
+        error: function() {
+            alert('Error loading personnel data');
+        }
+    });
+}
+
+$(document).ready(function() {
+    // Initialize DataTable with enhanced columns
+    $('#personnelTable').DataTable({
+        "responsive": true,
+        "pageLength": 25,
+        "order": [[ 0, "asc" ]],
+        "columnDefs": [
+            { "orderable": false, "targets": -1 } // Disable ordering on Action column
+        ]
+    });
+    
+    // Form validation for create form
+    $('#create_personnel_form').on('submit', function(e) {
+        var bioId = $('input[name="bio"]').val();
+        var email = $('input[name="email"]').val();
+        
+        if (!bioId || !email) {
+            e.preventDefault();
+            alert('Please fill in all required fields');
+            return false;
+        }
+    });
+});
+</script>

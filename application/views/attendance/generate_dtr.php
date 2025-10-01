@@ -316,7 +316,7 @@ function calculateWorkingDays($time_data, $selected_year, $selected_month) {
                                         '05-01', // Labor Day
                                         '06-12', // Independence Day
                                         '08-21', // Ninoy Aquino Day
-                                        '08-29', // National Heroes Day (last Monday of August - approximation)
+                                        '08-25', // National Heroes Day (last Monday of August - approximation)
                                         '11-30', // Bonifacio Day
                                         '12-25', // Christmas Day
                                         '12-30', // Rizal Day

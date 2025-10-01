@@ -14,6 +14,7 @@ class Personnel extends CI_Controller
         $data['title'] = 'Personnel Management';
 
         $data['person'] = $this->personnelModel->personnels();
+        $data['statistics'] = $this->personnelModel->get_personnel_statistics();
 
         $this->base->load('default', 'personnel/manage', $data);
     }
@@ -43,11 +44,14 @@ class Personnel extends CI_Controller
     {
         $this->session->set_flashdata('success', 'danger');
         $this->form_validation->set_rules('fname', 'First Name', 'trim|required');
-        $this->form_validation->set_rules('mname', 'Last Name', 'trim|required');
-        $this->form_validation->set_rules('lname', 'Middle Name', 'trim|required');
+        $this->form_validation->set_rules('mname', 'Middle Name', 'trim|required');
+        $this->form_validation->set_rules('lname', 'Last Name', 'trim|required');
         $this->form_validation->set_rules('email', 'Email Address', 'trim|required|valid_email|is_unique[personnels.email]');
         $this->form_validation->set_rules('position', 'Personnel Position', 'trim|required');
-        $this->form_validation->set_rules('bio', 'Personnel Biometrics ID', 'trim|required');
+        $this->form_validation->set_rules('bio', 'Personnel Biometrics ID', 'trim|required|is_unique[personnels.bio_id]');
+        $this->form_validation->set_rules('employment_type', 'Employment Type', 'trim|required');
+        $this->form_validation->set_rules('salary_grade', 'Salary Grade', 'trim|numeric');
+        $this->form_validation->set_rules('schedule_type', 'Schedule Type', 'trim|required');
 
         if ($this->form_validation->run() == FALSE) {
 
@@ -62,6 +66,9 @@ class Personnel extends CI_Controller
                 'email' => $this->input->post('email'),
                 'fb' => $this->input->post('fb_url'),
                 'bio_id' => $this->input->post('bio'),
+                'employment_type' => $this->input->post('employment_type'),
+                'salary_grade' => $this->input->post('salary_grade') ? intval($this->input->post('salary_grade')) : null,
+                'schedule_type' => $this->input->post('schedule_type'),
             );
 
             $insert =  $this->personnelModel->create_personnel($data);
@@ -80,11 +87,14 @@ class Personnel extends CI_Controller
     {
         $this->session->set_flashdata('success', 'danger');
         $this->form_validation->set_rules('fname', 'First Name', 'trim|required');
-        $this->form_validation->set_rules('mname', 'Last Name', 'trim|required');
-        $this->form_validation->set_rules('lname', 'Middle Name', 'trim|required');
+        $this->form_validation->set_rules('mname', 'Middle Name', 'trim|required');
+        $this->form_validation->set_rules('lname', 'Last Name', 'trim|required');
         $this->form_validation->set_rules('email', 'Email Address', 'trim|required|valid_email');
         $this->form_validation->set_rules('position', 'Personnel Position', 'trim|required');
         $this->form_validation->set_rules('bio', 'Personnel Biometrics ID', 'trim|required');
+        $this->form_validation->set_rules('employment_type', 'Employment Type', 'trim|required');
+        $this->form_validation->set_rules('salary_grade', 'Salary Grade', 'trim|numeric');
+        $this->form_validation->set_rules('schedule_type', 'Schedule Type', 'trim|required');
 
         if ($this->form_validation->run() == FALSE) {
 
@@ -100,6 +110,9 @@ class Personnel extends CI_Controller
                 'fb' => $this->input->post('fb_url'),
                 'status' => $this->input->post('status'),
                 'bio_id' => $this->input->post('bio'),
+                'employment_type' => $this->input->post('employment_type'),
+                'salary_grade' => $this->input->post('salary_grade') ? intval($this->input->post('salary_grade')) : null,
+                'schedule_type' => $this->input->post('schedule_type'),
             );
 
             $insert =  $this->personnelModel->update($data, $id);
@@ -127,7 +140,6 @@ class Personnel extends CI_Controller
         $this->session->set_flashdata('success', 'danger');
 
         if (!$this->upload->do_upload('import_file')) {
-
             $this->session->set_flashdata('message',  $this->upload->display_errors());
         } else {
             $file = $this->upload->data();
@@ -137,31 +149,60 @@ class Personnel extends CI_Controller
             $i = 0;
 
             $importRes = array();
+            $duplicates = array();
+            $errors = array();
 
             if ($data) {
                 // Initialize $importData_arr Array
                 while (($filedata = fgetcsv($data, 1000, ",")) !== FALSE) {
-
-
-
                     // Skip first row & check number of fields
                     if ($i > 0) {
+                        // New CSV structure: Timestamp,Biometrics ID,Employee ID,Last Name,First Name,Middle Name,Type of Employment,Position,Salary Grade,Email Address,Type of Schedule
+                        
+                        if (count($filedata) < 11) {
+                            $errors[] = "Row $i: Insufficient columns. Expected 11, got " . count($filedata);
+                            $i++;
+                            continue;
+                        }
 
-                        $email = $filedata[4];
+                        $email = trim($filedata[9]); // Email Address is now at index 9
+                        $bio_id = trim($filedata[1]); // Biometrics ID
+                        
+                        // Check for duplicate email
                         $checkEmail = $this->personnelModel->checkPersonnel($email);
-
+                        
+                        // Check for duplicate bio_id
+                        $checkBioId = $this->personnelModel->get_personnel_by_bio_id($bio_id);
+                        
                         if ($checkEmail == 1) {
-                            $this->session->set_flashdata('message', 'Importing has been stopped. Duplicate email address!');
-                            redirect($_SERVER['HTTP_REFERER'], 'refresh');
+                            $duplicates[] = "Row $i: Duplicate email address - $email";
+                        } elseif ($checkBioId) {
+                            $duplicates[] = "Row $i: Duplicate biometrics ID - $bio_id";
                         } else {
-                            // Key names are the insert table field names - name, email, city, and status
-                            $importRes[$i]['lname'] = $filedata[0];
-                            $importRes[$i]['fname'] = $filedata[1];
-                            $importRes[$i]['mname'] = $filedata[2];
-                            $importRes[$i]['position'] = $filedata[3];
-                            $importRes[$i]['email'] = $filedata[4];
-                            $importRes[$i]['fb_url'] = $filedata[5];
-                            $importRes[$i]['bio'] = $filedata[6];
+                            // Parse timestamp
+                            $timestamp = !empty($filedata[0]) ? date('Y-m-d H:i:s', strtotime($filedata[0])) : null;
+                            
+                            // Parse employment type
+                            $employment_type = trim($filedata[6]);
+                            if (!in_array($employment_type, ['Regular', 'Contract of Service', 'COS / JO'])) {
+                                $employment_type = 'Regular'; // Default value
+                            }
+                            
+                            // Parse salary grade
+                            $salary_grade = is_numeric($filedata[8]) ? intval($filedata[8]) : null;
+                            
+                            $importRes[$i] = array(
+                                'timestamp' => $timestamp,
+                                'bio_id' => $bio_id,
+                                'lastname' => trim($filedata[3]),
+                                'firstname' => trim($filedata[4]),
+                                'middlename' => trim($filedata[5]),
+                                'employment_type' => $employment_type,
+                                'position' => trim($filedata[7]),
+                                'salary_grade' => $salary_grade,
+                                'email' => $email,
+                                'schedule_type' => trim($filedata[10])
+                            );
                         }
                     }
                     $i++;
@@ -169,25 +210,46 @@ class Personnel extends CI_Controller
 
                 fclose($data);
 
-                // Insert data
-                $count = 0;
-                foreach ($importRes as $data) {
-
-                    $pers = array(
-                        'firstname' => $data['fname'],
-                        'lastname' => $data['lname'],
-                        'middlename' => $data['mname'],
-                        'position' => $data['position'],
-                        'email' => $data['email'],
-                        'fb' => $data['fb_url'],
-                        'bio_id' => $data['bio'],
-                    );
-
-                    $this->personnelModel->create_personnel($pers);
-                    $count++;
+                // Report duplicates and errors
+                if (!empty($duplicates) || !empty($errors)) {
+                    $message = '';
+                    if (!empty($errors)) {
+                        $message .= "Errors found:\n" . implode("\n", $errors) . "\n\n";
+                    }
+                    if (!empty($duplicates)) {
+                        $message .= "Duplicates found:\n" . implode("\n", $duplicates);
+                    }
+                    $this->session->set_flashdata('message', $message);
+                    redirect($_SERVER['HTTP_REFERER'], 'refresh');
                 }
-                $this->session->set_flashdata('success', 'success');
-                $this->session->set_flashdata('message', 'File Imported Successfully!');
+
+                // Insert data using batch insert for better performance
+                if (!empty($importRes)) {
+                    $personnel_data = array();
+                    
+                    foreach ($importRes as $data) {
+                        $personnel_data[] = array(
+                            'timestamp' => $data['timestamp'],
+                            'bio_id' => $data['bio_id'],
+                            'firstname' => $data['firstname'],
+                            'lastname' => $data['lastname'],
+                            'middlename' => $data['middlename'],
+                            'employment_type' => $data['employment_type'],
+                            'position' => $data['position'],
+                            'salary_grade' => $data['salary_grade'],
+                            'email' => $data['email'],
+                            'schedule_type' => $data['schedule_type'],
+                            'status' => 1 // Active by default
+                        );
+                    }
+                    
+                    $count = $this->personnelModel->create_personnel_batch($personnel_data);
+                    
+                    $this->session->set_flashdata('success', 'success');
+                    $this->session->set_flashdata('message', "Successfully imported $count personnel records!");
+                } else {
+                    $this->session->set_flashdata('message', 'No valid records found to import.');
+                }
             } else {
                 $this->session->set_flashdata('message', 'Unable to open the file! Please contact support');
             }

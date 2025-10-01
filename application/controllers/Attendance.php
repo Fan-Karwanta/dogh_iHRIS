@@ -104,6 +104,14 @@ class Attendance extends CI_Controller
             redirect('auth/login', 'refresh');
         }
 
+        // If no ID provided, show personnel selector
+        if (empty($id)) {
+            $data['title'] = 'Generate DTR - Select Personnel';
+            $data['all_personnel'] = $this->personnelModel->personnels();
+            $this->base->load('default', 'attendance/select_personnel_dtr', $data);
+            return;
+        }
+
         $data['person'] = $this->personnelModel->personnels($id);
 
         $data['title'] = 'Generate DTR';
@@ -308,5 +316,20 @@ class Attendance extends CI_Controller
             $this->session->set_flashdata('message', 'Something went wrong. This record cannot be deleted!');
         }
         redirect('attendance', 'refresh');
+    }
+
+    public function generate_bulk_dtr()
+    {
+        if (!$this->ion_auth->logged_in()) {
+            // redirect them to the login page
+            redirect('auth/login', 'refresh');
+        }
+
+        // Get all personnel
+        $data['person'] = $this->personnelModel->personnels();
+
+        $data['title'] = 'Generate Bulk DTR';
+
+        $this->base->load('default', 'attendance/generate_bulk_dtr', $data);
     }
 }

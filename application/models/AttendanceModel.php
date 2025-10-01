@@ -163,12 +163,7 @@ class AttendanceModel extends CI_Model
     {
         $result = $this->db->insert('attendance', $data);
         
-        // Log audit trail for CREATE action
-        if ($result && $this->db->affected_rows() > 0) {
-            $this->load->model('AuditTrailModel', 'auditModel');
-            $attendance_id = $this->db->insert_id();
-            $this->auditModel->log_attendance_change($attendance_id, 'CREATE', null, $data, $reason);
-        }
+        // CREATE actions are not logged in audit trail
         
         return $this->db->affected_rows();
     }
@@ -200,19 +195,11 @@ class AttendanceModel extends CI_Model
 
     public function delete($id, $reason = null)
     {
-        // Get data before deletion for audit trail
-        $old_data = $this->getAttendance($id);
+        // DELETE actions are not logged in audit trail
         
         $this->db->where('id', $id);
         $this->db->delete('attendance');
         $affected_rows = $this->db->affected_rows();
-        
-        // Log audit trail for DELETE action
-        if ($affected_rows > 0 && $old_data) {
-            $this->load->model('AuditTrailModel', 'auditModel');
-            $old_array = (array)$old_data;
-            $this->auditModel->log_attendance_change($id, 'DELETE', $old_array, null, $reason);
-        }
         
         return $affected_rows;
     }

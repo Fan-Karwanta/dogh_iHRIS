@@ -59,7 +59,6 @@
                                 <th>Afternoon-Out</th>
                                 <th>Undertime Hours</th>
                                 <th>Undertime Minutes</th>
-                                <th>Device Code</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -73,7 +72,6 @@
                                 <th>Afternoon-Out</th>
                                 <th>Undertime Hours</th>
                                 <th>Undertime Minutes</th>
-                                <th>Device Code</th>
                                 <th>Action</th>
                             </tr>
                         </tfoot>

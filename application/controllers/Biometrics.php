@@ -36,7 +36,6 @@ class Biometrics extends CI_Controller
             $row[] = empty($bio->pm_out) ? null : date('h:i A', strtotime($bio->pm_out));
             $row[] = isset($bio->undertime_hours) ? $bio->undertime_hours : '0';
             $row[] = isset($bio->undertime_minutes) ? $bio->undertime_minutes : '0';
-            $row[] = !empty($bio->device_code) ? $bio->device_code : 'N/A';
             $row[] = '
                  <div class="form-button-action">
                 
@@ -229,14 +228,14 @@ class Biometrics extends CI_Controller
                 while (($filedata = fgetcsv($data, 1000, ",")) !== FALSE) {
 
                     // Skip first row (header) and empty rows - start from row 2 (index 1)
-                    if ($i > 0 && !empty($filedata[0]) && !empty($filedata[2]) && trim($filedata[0]) != '' && is_numeric(trim($filedata[0]))) {
-                        // New CSV structure: Employee No., Name, Attendance log, Device Code
-                        $employee_no = trim($filedata[0]);
-                        $attendance_log = trim($filedata[2]);
-                        $device_code = isset($filedata[3]) ? trim($filedata[3]) : '';
+                    if ($i > 0 && !empty($filedata[0]) && !empty($filedata[1]) && trim($filedata[0]) != '' && is_numeric(trim($filedata[0]))) {
+                        // CSV structure: bio_id, biometrics_time
+                        $bio_id = trim($filedata[0]);
+                        $biometrics_time = trim($filedata[1]);
+                        $device_code = ''; // No device code in this CSV format
                         
-                        // Parse the attendance log datetime
-                        $datetime = DateTime::createFromFormat('m/d/Y H:i', $attendance_log);
+                        // Parse the biometrics_time datetime
+                        $datetime = DateTime::createFromFormat('m/d/Y H:i', $biometrics_time);
                         if ($datetime) {
                             $log_date = $datetime->format('Y-m-d');
                             $log_time = $datetime->format('H:i:s');
@@ -245,7 +244,7 @@ class Biometrics extends CI_Controller
                             if (!empty($date)) {
                                 if ($date == $log_date) {
                                     $importRes[] = array(
-                                        'employee_no' => $employee_no,
+                                        'bio_id' => $bio_id,
                                         'date' => $log_date,
                                         'time' => $log_time,
                                         'device_code' => $device_code
@@ -253,7 +252,7 @@ class Biometrics extends CI_Controller
                                 }
                             } else {
                                 $importRes[] = array(
-                                    'employee_no' => $employee_no,
+                                    'bio_id' => $bio_id,
                                     'date' => $log_date,
                                     'time' => $log_time,
                                     'device_code' => $device_code
@@ -272,18 +271,18 @@ class Biometrics extends CI_Controller
                 
                 // Group entries by employee and date
                 foreach ($importRes as $data) {
-                    $employee_no = $data['employee_no'];
+                    $bio_id = $data['bio_id'];
                     $date = $data['date'];
                     $time = $data['time'];
                     $device_code = $data['device_code'];
                     
-                    $key = $employee_no . '_' . $date;
+                    $key = $bio_id . '_' . $date;
                     if (!isset($grouped_by_date[$key])) {
                         $grouped_by_date[$key] = array();
                     }
                     
                     $grouped_by_date[$key][] = array(
-                        'employee_no' => $employee_no,
+                        'bio_id' => $bio_id,
                         'date' => $date,
                         'time' => $time,
                         'device_code' => $device_code,
@@ -317,7 +316,7 @@ class Biometrics extends CI_Controller
                 // Group filtered entries by employee and date for sequential assignment
                 $daily_entries = array();
                 foreach ($filtered_entries as $entry) {
-                    $key = $entry['employee_no'] . '_' . $entry['date'];
+                    $key = $entry['bio_id'] . '_' . $entry['date'];
                     if (!isset($daily_entries[$key])) {
                         $daily_entries[$key] = array();
                     }
@@ -325,12 +324,12 @@ class Biometrics extends CI_Controller
                 }
                 
                 foreach ($daily_entries as $day_entries) {
-                    $employee_no = $day_entries[0]['employee_no'];
+                    $bio_id = $day_entries[0]['bio_id'];
                     $date = $day_entries[0]['date'];
                     $device_code = $day_entries[0]['device_code'];
                     
                     // Check if personnel exists in database
-                    $personnel_exists = $this->biometricsModel->checkPersonnelExists($employee_no);
+                    $personnel_exists = $this->biometricsModel->checkPersonnelExists($bio_id);
                     
                     if (!$personnel_exists) {
                         $skipped++;
@@ -342,7 +341,7 @@ class Biometrics extends CI_Controller
                         return $a['timestamp'] - $b['timestamp'];
                     });
                     
-                    $checkAttend = $this->biometricsModel->getBio($employee_no, $date);
+                    $checkAttend = $this->biometricsModel->getBio($bio_id, $date);
                     
                     // Use smart time assignment based on actual time values
                     $assigned_times = $this->smartTimeAssignment($day_entries);
@@ -391,7 +390,7 @@ class Biometrics extends CI_Controller
                         // Create new record
                         $logs = array(
                             'date' => $date,
-                            'bio_id' => $employee_no,
+                            'bio_id' => $bio_id,
                             'device_code' => $device_code
                         );
                         
@@ -753,5 +752,21 @@ class Biometrics extends CI_Controller
             $this->session->set_flashdata('message', 'Something went wrong. This attendance cannot be deleted!');
         }
         redirect('biometrics', 'refresh');
+    }
+
+    
+    public function generate_bulk_dtr()
+    {
+        if (!$this->ion_auth->logged_in()) {
+            // redirect them to the login page
+            redirect('auth/login', 'refresh');
+        }
+
+        // Get all personnel
+        $data['person'] = $this->personnelModel->personnels();
+
+        $data['title'] = 'Generate Bulk DTR';
+
+        $this->base->load('default', 'attendance/generate_bulk_dtr', $data);
     }
 }
