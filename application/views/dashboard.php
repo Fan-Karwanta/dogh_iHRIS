@@ -111,15 +111,70 @@
         </div>
     </div>
     
-    <!-- Attendance Distribution -->
+    <!-- Edits vs Missing Logs Comparison -->
     <div class="col-md-4">
         <div class="card">
             <div class="card-header">
-                <div class="card-title">Today's Breakdown</div>
+                <div class="card-head-row">
+                    <div class="card-title">
+                        <i class="fas fa-chart-bar mr-2"></i>Edits vs Missing Logs
+                    </div>
+                </div>
             </div>
             <div class="card-body">
-                <div class="chart-container">
-                    <canvas id="pieChart" style="width: 100%; height: 300px;"></canvas>
+                <!-- Filter Section -->
+                <div class="mb-3">
+                    <div class="row">
+                        <div class="col-12 mb-2">
+                            <label class="form-label mb-1" style="font-size: 12px; font-weight: 600; color: #36A2EB;">
+                                <i class="fas fa-edit"></i> Edits Period
+                            </label>
+                            <select id="editsMonthFilter" class="form-control form-control-sm">
+                                <?php 
+                                // Generate last 12 months
+                                for ($i = 0; $i < 12; $i++) {
+                                    $month_date = date('Y-m', strtotime("-$i months"));
+                                    $month_label = date('F Y', strtotime("-$i months"));
+                                    $selected = ($i == 0) ? 'selected' : '';
+                                    echo "<option value='$month_date' $selected>$month_label</option>";
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label mb-1" style="font-size: 12px; font-weight: 600; color: #FF6384;">
+                                <i class="fas fa-calendar-times"></i> DTR Records Period
+                            </label>
+                            <select id="dtrMonthFilter" class="form-control form-control-sm">
+                                <?php 
+                                // Generate last 12 months
+                                for ($i = 0; $i < 12; $i++) {
+                                    $month_date = date('Y-m', strtotime("-$i months"));
+                                    $month_label = date('F Y', strtotime("-$i months"));
+                                    $selected = ($i == 1) ? 'selected' : ''; // Default to previous month
+                                    echo "<option value='$month_date' $selected>$month_label</option>";
+                                }
+                                ?>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Chart Container -->
+                <div class="chart-container" style="position: relative; height: 220px;">
+                    <canvas id="breakdownChart"></canvas>
+                </div>
+                
+                <!-- Summary Stats -->
+                <div class="row mt-3 pt-3" style="border-top: 1px solid #eee;">
+                    <div class="col-6 text-center">
+                        <div style="font-size: 11px; color: #888; margin-bottom: 4px;">Total Edits</div>
+                        <div style="font-size: 20px; font-weight: bold; color: #36A2EB;" id="totalEditsCount"><?= $chart_data['total_edits'] ?></div>
+                    </div>
+                    <div class="col-6 text-center">
+                        <div style="font-size: 11px; color: #888; margin-bottom: 4px;">Missing Logs</div>
+                        <div style="font-size: 20px; font-weight: bold; color: #FF6384;" id="missingLogsCount"><?= $chart_data['missing_logs'] ?></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -266,28 +321,107 @@ const dailyChart = new Chart(dailyCtx, {
     }
 });
 
-// Pie Chart for Today's Distribution
-const pieCtx = document.getElementById('pieChart').getContext('2d');
-const pieChart = new Chart(pieCtx, {
-    type: 'doughnut',
+// Clustered Column Chart for Edits vs Missing Logs
+const breakdownCtx = document.getElementById('breakdownChart').getContext('2d');
+let breakdownChart = new Chart(breakdownCtx, {
+    type: 'bar',
     data: {
-        labels: ['Manual Attendance', 'Biometric Records'],
-        datasets: [{
-            data: [<?= $today_attendance ?>, <?= $today_biometrics ?>],
-            backgroundColor: ['#36A2EB', '#FF6384'],
-            borderWidth: 2
-        }]
+        labels: ['Comparison'],
+        datasets: [
+            {
+                label: 'Total Edits',
+                data: [<?= $chart_data['total_edits'] ?>],
+                backgroundColor: 'rgba(54, 162, 235, 0.85)',
+                borderColor: 'rgb(54, 162, 235)',
+                borderWidth: 2,
+                borderRadius: 6,
+                barThickness: 40
+            },
+            {
+                label: 'Missing Logs',
+                data: [<?= $chart_data['missing_logs'] ?>],
+                backgroundColor: 'rgba(255, 99, 132, 0.85)',
+                borderColor: 'rgb(255, 99, 132)',
+                borderWidth: 2,
+                borderRadius: 6,
+                barThickness: 40
+            }
+        ]
     },
     options: {
         responsive: true,
         maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 10,
+                    font: {
+                        size: 11
+                    }
+                },
+                grid: {
+                    color: 'rgba(0, 0, 0, 0.05)'
+                }
+            },
+            x: {
+                grid: {
+                    display: false
+                }
+            }
+        },
         plugins: {
             legend: {
-                position: 'bottom'
+                display: false
+            },
+            tooltip: {
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                padding: 12,
+                titleFont: {
+                    size: 13
+                },
+                bodyFont: {
+                    size: 12
+                },
+                callbacks: {
+                    title: function(context) {
+                        return context[0].dataset.label;
+                    },
+                    label: function(context) {
+                        return 'Count: ' + context.parsed.y;
+                    }
+                }
             }
         }
     }
 });
+
+// Function to update chart data
+function updateChartData() {
+    const editsMonth = document.getElementById('editsMonthFilter').value;
+    const dtrMonth = document.getElementById('dtrMonthFilter').value;
+    
+    // Fetch new data via AJAX
+    fetch('<?= site_url('biometrics/get_dashboard_chart_data') ?>?edits_month=' + editsMonth + '&dtr_month=' + dtrMonth)
+        .then(response => response.json())
+        .then(data => {
+            // Update chart data
+            breakdownChart.data.datasets[0].data = [data.total_edits];
+            breakdownChart.data.datasets[1].data = [data.missing_logs];
+            breakdownChart.update('active');
+            
+            // Update summary counts
+            document.getElementById('totalEditsCount').textContent = data.total_edits;
+            document.getElementById('missingLogsCount').textContent = data.missing_logs;
+        })
+        .catch(error => {
+            console.error('Error fetching chart data:', error);
+        });
+}
+
+// Month filter change handlers
+document.getElementById('editsMonthFilter').addEventListener('change', updateChartData);
+document.getElementById('dtrMonthFilter').addEventListener('change', updateChartData);
 
 // Monthly Trends Chart
 const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');

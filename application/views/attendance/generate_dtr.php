@@ -2,7 +2,9 @@
 /**
  * Calculate total working days from DTR data
  * Handles full days, half days, and weekend/holiday work
+ * TEMPORARILY DISABLED - Leave blank for manual entry
  */
+/*
 function calculateWorkingDays($time_data, $selected_year, $selected_month) {
     $total_days = 0;
     $b = 0;
@@ -49,6 +51,7 @@ function calculateWorkingDays($time_data, $selected_year, $selected_month) {
     
     return $total_days;
 }
+*/
 ?>
 
 <div class="page-header">
@@ -450,13 +453,13 @@ function calculateWorkingDays($time_data, $selected_year, $selected_month) {
                                 <?php endfor ?>
                                 
                                 <!-- Total Working Days Row -->
-                                <?php $total_working_days = calculateWorkingDays($time, $selected_year, $selected_month); ?>
+                                <?php // $total_working_days = calculateWorkingDays($time, $selected_year, $selected_month); ?>
                                 <tr style="background-color: #f8f9fa; font-weight: bold;">
                                     <td colspan="6" style="border: 1px solid black; padding: 5px; text-align: left; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">
                                         <strong>Total Number of Days Present</strong>
                                     </td>
                                     <td style="border: 1px solid black; padding: 5px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">
-                                        <strong><?= number_format($total_working_days, 1) ?></strong>
+                                        <strong></strong>
                                     </td>
                                 </tr>
                             </tbody>
@@ -713,7 +716,7 @@ function calculateWorkingDays($time_data, $selected_year, $selected_month) {
                                         <strong>Total Number of Days Present</strong>
                                     </td>
                                     <td style="border: 1px solid black; padding: 5px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">
-                                        <strong><?= number_format($total_working_days, 1) ?></strong>
+                                        <strong></strong>
                                     </td>
                                 </tr>
                             </tbody>

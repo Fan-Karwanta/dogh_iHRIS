@@ -182,4 +182,177 @@ class BiometricsModel extends CI_Model
         $query = $this->db->get('personnels');
         return $query->num_rows() > 0;
     }
+
+    /**
+     * Get failure to clock in/out summary for all employees
+     * Returns records where at least one time slot has data but others are missing
+     * Excludes weekends and holidays, and full-day absences (all 4 slots empty)
+     */
+    public function getFailureToClockSummary($start_date = null, $end_date = null)
+    {
+        // Default to current month if no dates provided
+        if (!$start_date) {
+            $start_date = date('Y-m-01');
+        }
+        if (!$end_date) {
+            $end_date = date('Y-m-t');
+        }
+
+        // Get all biometric records with at least one time entry (not full-day absence)
+        $this->db->select('biometrics.*, personnels.firstname, personnels.lastname, personnels.middlename, personnels.bio_id');
+        $this->db->from('biometrics');
+        $this->db->join('personnels', 'personnels.bio_id = biometrics.bio_id');
+        $this->db->where('biometrics.date >=', $start_date);
+        $this->db->where('biometrics.date <=', $end_date);
+        
+        // Only get records where at least one time slot has data (not full-day absence)
+        $this->db->group_start();
+        $this->db->where('biometrics.am_in IS NOT NULL');
+        $this->db->or_where('biometrics.am_out IS NOT NULL');
+        $this->db->or_where('biometrics.pm_in IS NOT NULL');
+        $this->db->or_where('biometrics.pm_out IS NOT NULL');
+        $this->db->group_end();
+        
+        $this->db->order_by('biometrics.date', 'ASC');
+        $this->db->order_by('personnels.lastname', 'ASC');
+        
+        $query = $this->db->get();
+        return $query->result();
+    }
+
+    /**
+     * Get dashboard chart data for edits and missing logs
+     * Returns total edits count and missing logs count for specific months
+     * @param string $edits_month - Month for counting edits (YYYY-MM)
+     * @param string $dtr_month - Month for counting DTR missing logs (YYYY-MM)
+     */
+    public function getDashboardChartData($edits_month = null, $dtr_month = null)
+    {
+        if (!$edits_month) {
+            $edits_month = date('Y-m');
+        }
+        if (!$dtr_month) {
+            $dtr_month = date('Y-m');
+        }
+        
+        // Parse edits month
+        list($edit_year, $edit_month) = explode('-', $edits_month);
+        $edit_start_date = $edit_year . '-' . $edit_month . '-01';
+        $edit_end_date = date('Y-m-t', strtotime($edit_start_date));
+        
+        // Parse DTR month
+        list($dtr_year, $dtr_month_num) = explode('-', $dtr_month);
+        $dtr_start_date = $dtr_year . '-' . $dtr_month_num . '-01';
+        $dtr_end_date = date('Y-m-t', strtotime($dtr_start_date));
+        
+        // Get total edits count from audit_trail for biometrics updates
+        $this->db->select('COUNT(*) as total_edits');
+        $this->db->from('audit_trail');
+        $this->db->where('table_name', 'biometrics');
+        $this->db->where('action_type', 'UPDATE');
+        $this->db->where('DATE(created_at) >=', $edit_start_date);
+        $this->db->where('DATE(created_at) <=', $edit_end_date);
+        $edit_query = $this->db->get();
+        $total_edits = $edit_query->row()->total_edits;
+        
+        // Get missing logs count (failures to clock in/out)
+        // Get all biometric records with at least one time entry (not full-day absence)
+        $this->db->select('biometrics.*');
+        $this->db->from('biometrics');
+        $this->db->join('personnels', 'personnels.bio_id = biometrics.bio_id');
+        $this->db->where('biometrics.date >=', $dtr_start_date);
+        $this->db->where('biometrics.date <=', $dtr_end_date);
+        
+        // Only get records where at least one time slot has data (not full-day absence)
+        $this->db->group_start();
+        $this->db->where('biometrics.am_in IS NOT NULL');
+        $this->db->or_where('biometrics.am_out IS NOT NULL');
+        $this->db->or_where('biometrics.pm_in IS NOT NULL');
+        $this->db->or_where('biometrics.pm_out IS NOT NULL');
+        $this->db->group_end();
+        
+        $query = $this->db->get();
+        $records = $query->result();
+        
+        // Count missing logs (same logic as failure_summary)
+        $missing_logs_count = 0;
+        foreach ($records as $record) {
+            $date = $record->date;
+            $day_of_week = date('w', strtotime($date));
+            
+            // Skip weekends (Sunday = 0, Saturday = 6)
+            if ($day_of_week == 0 || $day_of_week == 6) {
+                continue;
+            }
+            
+            // Check if it's a Philippine holiday
+            if ($this->isPhilippineHoliday($date)) {
+                continue;
+            }
+            
+            // Count missing entries (each missing field is one incident)
+            if (empty($record->am_in)) {
+                $missing_logs_count++;
+            }
+            if (empty($record->am_out)) {
+                $missing_logs_count++;
+            }
+            if (empty($record->pm_in)) {
+                $missing_logs_count++;
+            }
+            if (empty($record->pm_out)) {
+                $missing_logs_count++;
+            }
+        }
+        
+        return array(
+            'total_edits' => (int)$total_edits,
+            'missing_logs' => $missing_logs_count,
+            'edits_month' => date('F Y', strtotime($edit_start_date)),
+            'dtr_month' => date('F Y', strtotime($dtr_start_date))
+        );
+    }
+
+    /**
+     * Check if a date is a Philippine holiday
+     */
+    private function isPhilippineHoliday($date)
+    {
+        $year = date('Y', strtotime($date));
+        $month_day = date('m-d', strtotime($date));
+        
+        // Fixed Philippine holidays
+        $fixed_holidays = array(
+            '01-01', // New Year's Day
+            '02-25', // EDSA People Power Revolution Anniversary
+            '04-09', // Araw ng Kagitingan (Day of Valor)
+            '05-01', // Labor Day
+            '06-12', // Independence Day
+            '08-21', // Ninoy Aquino Day
+            '08-25', // National Heroes Day (last Monday of August - approximation)
+            '11-30', // Bonifacio Day
+            '12-25', // Christmas Day
+            '12-30', // Rizal Day
+            '12-31'  // New Year's Eve
+        );
+        
+        // Check fixed holidays
+        if (in_array($month_day, $fixed_holidays)) {
+            return true;
+        }
+        
+        // Variable holidays (simplified - you may need to adjust these)
+        // Maundy Thursday and Good Friday (varies each year)
+        if ($year == 2024 && ($month_day == '04-18' || $month_day == '04-19')) {
+            return true;
+        }
+        if ($year == 2025 && ($month_day == '04-17' || $month_day == '04-18')) {
+            return true;
+        }
+        if ($year == 2026 && ($month_day == '04-02' || $month_day == '04-03')) {
+            return true;
+        }
+        
+        return false;
+    }
 }

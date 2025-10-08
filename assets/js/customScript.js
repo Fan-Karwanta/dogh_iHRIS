@@ -5,7 +5,12 @@ $window.on("load",function (){
 $(document).ready(function(){
     var date = $('#month').val() || '2025-07';
 
-    $('#personnelTable').DataTable();
+    // Only initialize personnelTable if it's NOT on the time changes page
+    if ($('#personnelTable').length && !$('#personnelTable').hasClass('time-changes-table')) {
+        if (!$.fn.DataTable.isDataTable('#personnelTable')) {
+            $('#personnelTable').DataTable();
+        }
+    }
 
     $('#attendanceTable').DataTable({ 
  

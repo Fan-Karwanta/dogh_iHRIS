@@ -22,6 +22,9 @@ $route['admin/generate_dtr/(:num)'] = 'attendance/generate_dtr/$1';
 $route['admin/biometrics'] = 'biometrics/index';
 $route['admin/generate_bio'] = 'biometrics/generate_bioreport';
 
+$route['admin/timechanges'] = 'timechanges/index';
+$route['timechanges/personnel_biometrics/(:num)'] = 'timechanges/personnel_biometrics/$1';
+
 $route['admin/audit_trail'] = 'AuditTrail/index';
 $route['admin/audit_trail/get_audit_data'] = 'AuditTrail/get_audit_data';
 $route['admin/audit_trail/get_personnel_audit_data'] = 'AuditTrail/get_personnel_audit_data';

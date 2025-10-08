@@ -769,4 +769,163 @@ class Biometrics extends CI_Controller
 
         $this->base->load('default', 'attendance/generate_bulk_dtr', $data);
     }
+
+    /**
+     * Summary of Failure to Clock In/Out
+     * Shows employees who failed to clock in or out on workdays where they have at least one record
+     */
+    public function failure_summary()
+    {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        // Check if user is admin
+        if (!$this->ion_auth->is_admin()) {
+            $this->session->set_flashdata('success', 'danger');
+            $this->session->set_flashdata('message', 'You do not have permission to access this page.');
+            redirect('admin/dashboard', 'refresh');
+        }
+
+        $data['title'] = 'Summary of Failure to Clock In/Out';
+
+        // Get date range from query parameters or default to current month
+        $start_date = $this->input->get('start_date') ?: date('Y-m-01');
+        $end_date = $this->input->get('end_date') ?: date('Y-m-t');
+
+        $data['start_date'] = $start_date;
+        $data['end_date'] = $end_date;
+
+        // Get failure data from model
+        $records = $this->biometricsModel->getFailureToClockSummary($start_date, $end_date);
+
+        // Process the data to identify failures
+        $data['failure_data'] = $this->processFailureData($records);
+
+        $this->base->load('default', 'bio/failure_summary', $data);
+    }
+
+    /**
+     * Process biometric records to identify failure to clock in/out
+     * Groups by date and identifies missing time slots
+     */
+    private function processFailureData($records)
+    {
+        $grouped_by_date = array();
+
+        foreach ($records as $record) {
+            $date = $record->date;
+            $day_of_week = date('w', strtotime($date));
+            
+            // Skip weekends (Sunday = 0, Saturday = 6)
+            if ($day_of_week == 0 || $day_of_week == 6) {
+                continue;
+            }
+
+            // Check if it's a Philippine holiday
+            if ($this->isPhilippineHoliday($date)) {
+                continue;
+            }
+
+            // Initialize date array if not exists
+            if (!isset($grouped_by_date[$date])) {
+                $grouped_by_date[$date] = array();
+            }
+
+            // Identify failures for this record
+            $failures = array();
+            
+            if (empty($record->am_in)) {
+                $failures[] = 'AM IN';
+            }
+            if (empty($record->am_out)) {
+                $failures[] = 'AM OUT';
+            }
+            if (empty($record->pm_in)) {
+                $failures[] = 'PM IN';
+            }
+            if (empty($record->pm_out)) {
+                $failures[] = 'PM OUT';
+            }
+
+            // Only add if there are failures
+            if (!empty($failures)) {
+                $grouped_by_date[$date][] = array(
+                    'employee_name' => $record->lastname . ', ' . $record->firstname . ' ' . (!empty($record->middlename) ? substr($record->middlename, 0, 1) . '.' : ''),
+                    'bio_id' => $record->bio_id,
+                    'failures' => $failures,
+                    'am_in' => $record->am_in,
+                    'am_out' => $record->am_out,
+                    'pm_in' => $record->pm_in,
+                    'pm_out' => $record->pm_out
+                );
+            }
+        }
+
+        // Sort by date descending
+        krsort($grouped_by_date);
+
+        return $grouped_by_date;
+    }
+
+    /**
+     * Check if a date is a Philippine holiday
+     */
+    private function isPhilippineHoliday($date)
+    {
+        $year = date('Y', strtotime($date));
+        $month_day = date('m-d', strtotime($date));
+        
+        // Fixed Philippine holidays
+        $fixed_holidays = array(
+            '01-01', // New Year's Day
+            '02-25', // EDSA People Power Revolution Anniversary
+            '04-09', // Araw ng Kagitingan (Day of Valor)
+            '05-01', // Labor Day
+            '06-12', // Independence Day
+            '08-21', // Ninoy Aquino Day
+            '08-25', // National Heroes Day (last Monday of August - approximation)
+            '11-30', // Bonifacio Day
+            '12-25', // Christmas Day
+            '12-30', // Rizal Day
+            '12-31'  // New Year's Eve
+        );
+        
+        // Check fixed holidays
+        if (in_array($month_day, $fixed_holidays)) {
+            return true;
+        }
+        
+        // Variable holidays (simplified - you may need to adjust these)
+        // Maundy Thursday and Good Friday (varies each year)
+        if ($year == 2024 && ($month_day == '04-18' || $month_day == '04-19')) {
+            return true;
+        }
+        if ($year == 2025 && ($month_day == '04-17' || $month_day == '04-18')) {
+            return true;
+        }
+        if ($year == 2026 && ($month_day == '04-02' || $month_day == '04-03')) {
+            return true;
+        }
+        
+        return false;
+    }
+
+    /**
+     * AJAX endpoint to get dashboard chart data
+     * Returns JSON with total edits and missing logs for specific months
+     */
+    public function get_dashboard_chart_data()
+    {
+        // Get month parameters from GET or POST
+        $edits_month = $this->input->get('edits_month') ?: $this->input->post('edits_month') ?: date('Y-m');
+        $dtr_month = $this->input->get('dtr_month') ?: $this->input->post('dtr_month') ?: date('Y-m');
+        
+        // Get data from model
+        $chart_data = $this->biometricsModel->getDashboardChartData($edits_month, $dtr_month);
+        
+        // Return as JSON
+        header('Content-Type: application/json');
+        echo json_encode($chart_data);
+    }
 }

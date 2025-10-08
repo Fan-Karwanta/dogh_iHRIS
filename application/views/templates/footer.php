@@ -47,3 +47,4 @@
 
 <script src="<?= site_url() ?>/assets/js/customScript.js"></script>
 <script src="<?= site_url() ?>/assets/js/ajaxForms.js"></script>
+<script src="<?= site_url() ?>/assets/js/timeChanges.js"></script>

@@ -36,6 +36,13 @@ class Dashboard extends CI_Controller
 		$data['monthly_stats'] = $this->dashboardModel->getMonthlyStats();
 		$data['top_attendees'] = $this->dashboardModel->getTopAttendees();
 		$data['recent_activity'] = $this->dashboardModel->getRecentActivity();
+		
+		// Get chart data for edits vs missing logs
+		// Default: Current month for edits, previous month for DTR records
+		$data['chart_data'] = $this->biometricsModel->getDashboardChartData(
+			date('Y-m'), // Current month for edits
+			date('Y-m', strtotime('-1 month')) // Previous month for DTR records
+		);
 
 		$data['title'] = 'Dashboard';
 

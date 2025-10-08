@@ -36,13 +36,19 @@
                         <p>Biometrics</p>
                     </a>
                 </li>
-                <li class="nav-item <?= $current_page == 'generate_dtr' || $current_page == 'generate_bulk_dtr' ? 'active' : null ?>">
+                <li class="nav-item <?= $current_page == 'timechanges' || $current_page == 'personnel_biometrics' ? 'active' : null ?>">
+                    <a href="<?= site_url('admin/timechanges') ?>">
+                        <i class="fas fa-user-clock"></i>
+                        <p>Time Changes</p>
+                    </a>
+                </li>
+                <li class="nav-item <?= $current_page == 'generate_dtr' || $current_page == 'generate_bulk_dtr' || $current_page == 'failure_summary' ? 'active' : null ?>">
                     <a data-toggle="collapse" href="#dtrMenu">
                         <i class="fas fa-file-alt"></i>
-                        <p>DTR Reports</p>
+                        <p>Reports</p>
                         <span class="caret"></span>
                     </a>
-                    <div class="collapse <?= $current_page == 'generate_dtr' || $current_page == 'generate_bulk_dtr' ? 'show' : null ?>" id="dtrMenu">
+                    <div class="collapse <?= $current_page == 'generate_dtr' || $current_page == 'generate_bulk_dtr' || $current_page == 'failure_summary' ? 'show' : null ?>" id="dtrMenu">
                         <ul class="nav nav-collapse">
                             <li class="<?= $current_page == 'generate_dtr' ? 'active' : null ?>">
                                 <a href="<?= site_url('attendance/generate_dtr') ?>">
@@ -52,6 +58,11 @@
                             <li class="<?= $current_page == 'generate_bulk_dtr' ? 'active' : null ?>">
                                 <a href="<?= site_url('attendance/generate_bulk_dtr') ?>">
                                     <span class="sub-item">Bulk DTR (All Personnel)</span>
+                                </a>
+                            </li>
+                            <li class="<?= $current_page == 'failure_summary' ? 'active' : null ?>">
+                                <a href="<?= site_url('biometrics/failure_summary') ?>">
+                                    <span class="sub-item">Failure to Clock In/Out</span>
                                 </a>
                             </li>
                         </ul>
