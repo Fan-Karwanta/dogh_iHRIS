@@ -222,41 +222,82 @@ class Biometrics extends CI_Controller
             $i = 0;
 
             $importRes = array();
+            $year_month = null;
 
             if ($data) {
-                // Initialize $importData_arr Array
-                while (($filedata = fgetcsv($data, 1000, ",")) !== FALSE) {
-
-                    // Skip first row (header) and empty rows - start from row 2 (index 1)
-                    if ($i > 0 && !empty($filedata[0]) && !empty($filedata[1]) && trim($filedata[0]) != '' && is_numeric(trim($filedata[0]))) {
-                        // CSV structure: bio_id, biometrics_time
+                $header_row = null;
+                $date_columns = array(); // Maps column index to day number
+                
+                // Parse CSV rows
+                while (($filedata = fgetcsv($data, 10000, ",")) !== FALSE) {
+                    
+                    // Row 4 (index 3): Extract year and month from "Made Date:2025/10/01-2025/10/15"
+                    if ($i == 3 && !empty($filedata[0]) && strpos($filedata[0], 'Made Date:') !== false) {
+                        $date_range = trim(str_replace('Made Date:', '', $filedata[0]));
+                        // Extract start date (e.g., "2025/10/01")
+                        $date_parts = explode('-', $date_range);
+                        if (!empty($date_parts[0])) {
+                            $start_date = trim($date_parts[0]);
+                            $date_obj = DateTime::createFromFormat('Y/m/d', $start_date);
+                            if ($date_obj) {
+                                $year_month = $date_obj->format('Y-m');
+                            }
+                        }
+                    }
+                    
+                    // Row 5 (index 4): Header row with date columns
+                    if ($i == 4) {
+                        $header_row = $filedata;
+                        // Map column indices to day numbers (starting from column 3)
+                        for ($col = 3; $col < count($header_row); $col++) {
+                            $day = trim($header_row[$col]);
+                            if (is_numeric($day) && $day >= 1 && $day <= 31) {
+                                $date_columns[$col] = (int)$day;
+                            }
+                        }
+                    }
+                    
+                    // Data rows (starting from row 7, index 6)
+                    if ($i >= 6 && !empty($filedata[0]) && is_numeric(trim($filedata[0]))) {
                         $bio_id = trim($filedata[0]);
-                        $biometrics_time = trim($filedata[1]);
                         $device_code = ''; // No device code in this CSV format
                         
-                        // Parse the biometrics_time datetime
-                        $datetime = DateTime::createFromFormat('m/d/Y H:i', $biometrics_time);
-                        if ($datetime) {
-                            $log_date = $datetime->format('Y-m-d');
-                            $log_time = $datetime->format('H:i:s');
-                            
-                            // Filter by date if specified
-                            if (!empty($date)) {
-                                if ($date == $log_date) {
-                                    $importRes[] = array(
-                                        'bio_id' => $bio_id,
-                                        'date' => $log_date,
-                                        'time' => $log_time,
-                                        'device_code' => $device_code
-                                    );
+                        // Process each date column
+                        foreach ($date_columns as $col_index => $day) {
+                            if (isset($filedata[$col_index]) && !empty(trim($filedata[$col_index]))) {
+                                $time_entries = trim($filedata[$col_index]);
+                                
+                                // Construct the full date (YYYY-MM-DD)
+                                if ($year_month) {
+                                    $log_date = $year_month . '-' . str_pad($day, 2, '0', STR_PAD_LEFT);
+                                    
+                                    // Filter by date if specified
+                                    if (!empty($date) && $date != $log_date) {
+                                        continue;
+                                    }
+                                    
+                                    // Split multiple time entries by newline
+                                    $times = preg_split('/[\r\n]+/', $time_entries);
+                                    
+                                    foreach ($times as $time_str) {
+                                        $time_str = trim($time_str);
+                                        if (!empty($time_str)) {
+                                            // Parse time in HH:MM format
+                                            if (preg_match('/^(\d{1,2}):(\d{2})$/', $time_str, $matches)) {
+                                                $hour = str_pad($matches[1], 2, '0', STR_PAD_LEFT);
+                                                $minute = $matches[2];
+                                                $log_time = $hour . ':' . $minute . ':00';
+                                                
+                                                $importRes[] = array(
+                                                    'bio_id' => $bio_id,
+                                                    'date' => $log_date,
+                                                    'time' => $log_time,
+                                                    'device_code' => $device_code
+                                                );
+                                            }
+                                        }
+                                    }
                                 }
-                            } else {
-                                $importRes[] = array(
-                                    'bio_id' => $bio_id,
-                                    'date' => $log_date,
-                                    'time' => $log_time,
-                                    'device_code' => $device_code
-                                );
                             }
                         }
                     }
