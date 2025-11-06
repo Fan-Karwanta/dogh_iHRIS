@@ -70,6 +70,18 @@ function calculateWorkingDays($time_data, $selected_year, $selected_month) {
         </li>
     </ul>
     <div class="ml-md-auto py-2 py-md-0">
+        <button id="toggleEditMode" class="btn btn-warning btn-border btn-round btn-sm" onclick="toggleEditMode()" title="Toggle Edit Mode">
+            <span class="btn-label">
+                <i class="fa fa-edit"></i>
+            </span>
+            Edit Mode
+        </button>
+        <button id="saveChanges" class="btn btn-success btn-border btn-round btn-sm" onclick="saveChanges()" style="display:none;" title="Save Changes">
+            <span class="btn-label">
+                <i class="fa fa-save"></i>
+            </span>
+            Save Changes
+        </button>
         <a href="javascript:void(0)" class="btn btn-danger btn-border btn-round btn-sm" onclick="printDiv('printThis')" title="Print DTR">
             <span class=" btn-label">
                 <i class="fa fa-print"></i>
@@ -320,6 +332,8 @@ function calculateWorkingDays($time_data, $selected_year, $selected_month) {
                                         '06-12', // Independence Day
                                         '08-21', // Ninoy Aquino Day
                                         '08-25', // National Heroes Day (last Monday of August - approximation)
+                                       // '10-28', // Davao Occ Araw
+                                       // '10-31', // All Souls' Evening
                                         '11-30', // Bonifacio Day
                                         '12-25', // Christmas Day
                                         '12-30', // Rizal Day
@@ -369,7 +383,7 @@ function calculateWorkingDays($time_data, $selected_year, $selected_month) {
                                     
                                     if (!empty($time[$b]->date)) :
                                         if (date('j', strtotime($time[$b]->date)) == $i) : ?>
-                                            <tr>
+                                            <tr data-date="<?= $current_date ?>" data-copy="1">
                                                 <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= $i ?></td>
                                                 <?php if ($is_weekend || $is_holiday) : ?>
                                                     <?php 
@@ -377,19 +391,16 @@ function calculateWorkingDays($time_data, $selected_year, $selected_month) {
                                                     $has_entries = !empty($time[$b]->morning_in) || !empty($time[$b]->morning_out) || 
                                                                   !empty($time[$b]->afternoon_in) || !empty($time[$b]->afternoon_out);
                                                     
-                                                    if ($has_entries) : // Show both label and time entries
+                                                    if ($has_entries) : // Show time entries without label (treat as regular workday)
                                                     ?>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">
-                                                            <strong style="font-size: 8px; font-family: 'Times New Roman', serif; color: black;"><?= $is_weekend ? getWeekendLabel($current_date) : 'HOLIDAY' ?></strong>
-                                                            <?= !empty($time[$b]->morning_in) ? '<br>' . date('h:i', strtotime($time[$b]->morning_in)) : '' ?>
-                                                        </td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b]->morning_out) ? date('h:i', strtotime($time[$b]->morning_out)) : '' ?></td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b]->afternoon_in) ? date('h:i', strtotime($time[$b]->afternoon_in)) : '' ?></td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b]->afternoon_out) ? date('h:i', strtotime($time[$b]->afternoon_out)) : '' ?></td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                        <td class="editable-cell" data-field="morning_in" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b]->morning_in) ? date('h:i', strtotime($time[$b]->morning_in)) : '' ?></td>
+                                                        <td class="editable-cell" data-field="morning_out" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b]->morning_out) ? date('h:i', strtotime($time[$b]->morning_out)) : '' ?></td>
+                                                        <td class="editable-cell" data-field="afternoon_in" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b]->afternoon_in) ? date('h:i', strtotime($time[$b]->afternoon_in)) : '' ?></td>
+                                                        <td class="editable-cell" data-field="afternoon_out" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b]->afternoon_out) ? date('h:i', strtotime($time[$b]->afternoon_out)) : '' ?></td>
+                                                        <td class="editable-cell" data-field="undertime_hours" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= isset($time[$b]->undertime_hours) && $time[$b]->undertime_hours !== null ? $time[$b]->undertime_hours : '' ?></td>
+                                                        <td class="editable-cell" data-field="undertime_minutes" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= isset($time[$b]->undertime_minutes) && $time[$b]->undertime_minutes !== null ? $time[$b]->undertime_minutes : '' ?></td>
                                                     <?php else : // Show only the label spanning columns ?>
-                                                        <td colspan="6" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><strong><?= $is_weekend ? getWeekendLabel($current_date) : 'HOLIDAY' ?></strong></td>
+                                                        <td colspan="6" class="editable-label" data-field="label" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><strong><?= $is_weekend ? getWeekendLabel($current_date) : 'HOLIDAY' ?></strong></td>
                                                     <?php endif; ?>
                                                 <?php else : // Regular workday ?>
                                                     <?php 
@@ -400,52 +411,52 @@ function calculateWorkingDays($time_data, $selected_year, $selected_month) {
                                                     if ($is_full_day_absent) : 
                                                         // Full day absence - show completely blank row
                                                     ?>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                        <td class="editable-cell" data-field="morning_in" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                        <td class="editable-cell" data-field="morning_out" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                        <td class="editable-cell" data-field="afternoon_in" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                        <td class="editable-cell" data-field="afternoon_out" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                        <td class="editable-cell" data-field="undertime_hours" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                        <td class="editable-cell" data-field="undertime_minutes" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
                                                     <?php else : 
                                                         // Partial attendance - show times and undertime
                                                     ?>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b]->morning_in) ? date('h:i', strtotime($time[$b]->morning_in)) : '' ?></td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b]->morning_out) ? date('h:i', strtotime($time[$b]->morning_out)) : '' ?></td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b]->afternoon_in) ? date('h:i', strtotime($time[$b]->afternoon_in)) : '' ?></td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b]->afternoon_out) ? date('h:i', strtotime($time[$b]->afternoon_out)) : '' ?></td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= isset($time[$b]->undertime_hours) && $time[$b]->undertime_hours !== null ? $time[$b]->undertime_hours : '' ?></td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= isset($time[$b]->undertime_minutes) && $time[$b]->undertime_minutes !== null ? $time[$b]->undertime_minutes : '' ?></td>
+                                                        <td class="editable-cell" data-field="morning_in" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b]->morning_in) ? date('h:i', strtotime($time[$b]->morning_in)) : '' ?></td>
+                                                        <td class="editable-cell" data-field="morning_out" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b]->morning_out) ? date('h:i', strtotime($time[$b]->morning_out)) : '' ?></td>
+                                                        <td class="editable-cell" data-field="afternoon_in" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b]->afternoon_in) ? date('h:i', strtotime($time[$b]->afternoon_in)) : '' ?></td>
+                                                        <td class="editable-cell" data-field="afternoon_out" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b]->afternoon_out) ? date('h:i', strtotime($time[$b]->afternoon_out)) : '' ?></td>
+                                                        <td class="editable-cell" data-field="undertime_hours" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= isset($time[$b]->undertime_hours) && $time[$b]->undertime_hours !== null ? $time[$b]->undertime_hours : '' ?></td>
+                                                        <td class="editable-cell" data-field="undertime_minutes" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= isset($time[$b]->undertime_minutes) && $time[$b]->undertime_minutes !== null ? $time[$b]->undertime_minutes : '' ?></td>
                                                     <?php endif; ?>
                                                 <?php endif; ?>
                                             </tr>
                                         <?php $b++;
                                         else : ?>
-                                            <tr>
+                                            <tr data-date="<?= $current_date ?>" data-copy="1">
                                                 <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= $i ?></td>
                                                 <?php if ($is_weekend || $is_holiday) : ?>
-                                                    <td colspan="6" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><strong><?= $is_weekend ? getWeekendLabel($current_date) : 'HOLIDAY' ?></strong></td>
+                                                    <td colspan="6" class="editable-label" data-field="label" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><strong><?= $is_weekend ? getWeekendLabel($current_date) : 'HOLIDAY' ?></strong></td>
                                                 <?php else : ?>
-                                                    <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                    <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                    <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                    <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                    <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                    <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                    <td class="editable-cell" data-field="morning_in" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                    <td class="editable-cell" data-field="morning_out" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                    <td class="editable-cell" data-field="afternoon_in" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                    <td class="editable-cell" data-field="afternoon_out" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                    <td class="editable-cell" data-field="undertime_hours" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                    <td class="editable-cell" data-field="undertime_minutes" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
                                                 <?php endif; ?>
                                             </tr>
                                         <?php endif ?>
                                     <?php else : ?>
-                                        <tr>
+                                        <tr data-date="<?= $current_date ?>" data-copy="1">
                                             <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= $i ?></td>
                                             <?php if ($is_weekend || $is_holiday) : ?>
-                                                <td colspan="6" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 10px; font-family: 'Times New Roman', serif; color: black;"><strong><?= $is_weekend ? getWeekendLabel($current_date) : 'HOLIDAY' ?></strong></td>
+                                                <td colspan="6" class="editable-label" data-field="label" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 10px; font-family: 'Times New Roman', serif; color: black;"><strong><?= $is_weekend ? getWeekendLabel($current_date) : 'HOLIDAY' ?></strong></td>
                                             <?php else : ?>
-                                                <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                <td class="editable-cell" data-field="morning_in" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                <td class="editable-cell" data-field="morning_out" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                <td class="editable-cell" data-field="afternoon_in" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                <td class="editable-cell" data-field="afternoon_out" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                <td class="editable-cell" data-field="undertime_hours" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                <td class="editable-cell" data-field="undertime_minutes" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
                                             <?php endif; ?>
                                         </tr>
                                     <?php endif ?>
@@ -630,25 +641,22 @@ function calculateWorkingDays($time_data, $selected_year, $selected_month) {
                                     
                                     if (!empty($time[$b2]->date)) :
                                         if (date('j', strtotime($time[$b2]->date)) == $i) : ?>
-                                            <tr>
+                                            <tr data-date="<?= $current_date ?>" data-copy="2">
                                                 <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= $i ?></td>
                                                 <?php if ($is_weekend || $is_holiday) : ?>
                                                     <?php 
                                                     $has_entries = !empty($time[$b2]->morning_in) || !empty($time[$b2]->morning_out) || 
                                                                   !empty($time[$b2]->afternoon_in) || !empty($time[$b2]->afternoon_out);
                                                     
-                                                    if ($has_entries) : ?>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">
-                                                            <strong style="font-size: 8px; font-family: 'Times New Roman', serif; color: black;"><?= $is_weekend ? getWeekendLabel($current_date) : 'HOLIDAY' ?></strong>
-                                                            <?= !empty($time[$b2]->morning_in) ? '<br>' . date('h:i', strtotime($time[$b2]->morning_in)) : '' ?>
-                                                        </td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b2]->morning_out) ? date('h:i', strtotime($time[$b2]->morning_out)) : '' ?></td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b2]->afternoon_in) ? date('h:i', strtotime($time[$b2]->afternoon_in)) : '' ?></td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b2]->afternoon_out) ? date('h:i', strtotime($time[$b2]->afternoon_out)) : '' ?></td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                    if ($has_entries) : // Show time entries without label (treat as regular workday) ?>
+                                                        <td class="editable-cell" data-field="morning_in" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b2]->morning_in) ? date('h:i', strtotime($time[$b2]->morning_in)) : '' ?></td>
+                                                        <td class="editable-cell" data-field="morning_out" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b2]->morning_out) ? date('h:i', strtotime($time[$b2]->morning_out)) : '' ?></td>
+                                                        <td class="editable-cell" data-field="afternoon_in" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b2]->afternoon_in) ? date('h:i', strtotime($time[$b2]->afternoon_in)) : '' ?></td>
+                                                        <td class="editable-cell" data-field="afternoon_out" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b2]->afternoon_out) ? date('h:i', strtotime($time[$b2]->afternoon_out)) : '' ?></td>
+                                                        <td class="editable-cell" data-field="undertime_hours" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= isset($time[$b2]->undertime_hours) && $time[$b2]->undertime_hours !== null ? $time[$b2]->undertime_hours : '' ?></td>
+                                                        <td class="editable-cell" data-field="undertime_minutes" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= isset($time[$b2]->undertime_minutes) && $time[$b2]->undertime_minutes !== null ? $time[$b2]->undertime_minutes : '' ?></td>
                                                     <?php else : ?>
-                                                        <td colspan="6" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><strong><?= $is_weekend ? getWeekendLabel($current_date) : 'HOLIDAY' ?></strong></td>
+                                                        <td colspan="6" class="editable-label" data-field="label" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><strong><?= $is_weekend ? getWeekendLabel($current_date) : 'HOLIDAY' ?></strong></td>
                                                     <?php endif; ?>
                                                 <?php else : // Regular workday for second DTR copy ?>
                                                     <?php 
@@ -659,52 +667,52 @@ function calculateWorkingDays($time_data, $selected_year, $selected_month) {
                                                     if ($is_full_day_absent_2) : 
                                                         // Full day absence - show completely blank row
                                                     ?>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                        <td class="editable-cell" data-field="morning_in" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                        <td class="editable-cell" data-field="morning_out" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                        <td class="editable-cell" data-field="afternoon_in" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                        <td class="editable-cell" data-field="afternoon_out" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                        <td class="editable-cell" data-field="undertime_hours" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                        <td class="editable-cell" data-field="undertime_minutes" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
                                                     <?php else : 
                                                         // Partial attendance - show times and undertime
                                                     ?>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b2]->morning_in) ? date('h:i', strtotime($time[$b2]->morning_in)) : '' ?></td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b2]->morning_out) ? date('h:i', strtotime($time[$b2]->morning_out)) : '' ?></td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b2]->afternoon_in) ? date('h:i', strtotime($time[$b2]->afternoon_in)) : '' ?></td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b2]->afternoon_out) ? date('h:i', strtotime($time[$b2]->afternoon_out)) : '' ?></td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= isset($time[$b2]->undertime_hours) && $time[$b2]->undertime_hours !== null ? $time[$b2]->undertime_hours : '' ?></td>
-                                                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= isset($time[$b2]->undertime_minutes) && $time[$b2]->undertime_minutes !== null ? $time[$b2]->undertime_minutes : '' ?></td>
+                                                        <td class="editable-cell" data-field="morning_in" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b2]->morning_in) ? date('h:i', strtotime($time[$b2]->morning_in)) : '' ?></td>
+                                                        <td class="editable-cell" data-field="morning_out" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b2]->morning_out) ? date('h:i', strtotime($time[$b2]->morning_out)) : '' ?></td>
+                                                        <td class="editable-cell" data-field="afternoon_in" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b2]->afternoon_in) ? date('h:i', strtotime($time[$b2]->afternoon_in)) : '' ?></td>
+                                                        <td class="editable-cell" data-field="afternoon_out" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= !empty($time[$b2]->afternoon_out) ? date('h:i', strtotime($time[$b2]->afternoon_out)) : '' ?></td>
+                                                        <td class="editable-cell" data-field="undertime_hours" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= isset($time[$b2]->undertime_hours) && $time[$b2]->undertime_hours !== null ? $time[$b2]->undertime_hours : '' ?></td>
+                                                        <td class="editable-cell" data-field="undertime_minutes" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= isset($time[$b2]->undertime_minutes) && $time[$b2]->undertime_minutes !== null ? $time[$b2]->undertime_minutes : '' ?></td>
                                                     <?php endif; ?>
                                                 <?php endif; ?>
                                             </tr>
                                         <?php $b2++;
                                         else : ?>
-                                            <tr>
+                                            <tr data-date="<?= $current_date ?>" data-copy="2">
                                                 <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= $i ?></td>
                                                 <?php if ($is_weekend || $is_holiday) : ?>
-                                                    <td colspan="6" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><strong><?= $is_weekend ? getWeekendLabel($current_date) : 'HOLIDAY' ?></strong></td>
+                                                    <td colspan="6" class="editable-label" data-field="label" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><strong><?= $is_weekend ? getWeekendLabel($current_date) : 'HOLIDAY' ?></strong></td>
                                                 <?php else : ?>
-                                                    <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                    <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                    <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                    <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                    <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                    <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                    <td class="editable-cell" data-field="morning_in" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                    <td class="editable-cell" data-field="morning_out" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                    <td class="editable-cell" data-field="afternoon_in" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                    <td class="editable-cell" data-field="afternoon_out" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                    <td class="editable-cell" data-field="undertime_hours" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                    <td class="editable-cell" data-field="undertime_minutes" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
                                                 <?php endif; ?>
                                             </tr>
                                         <?php endif ?>
                                     <?php else : ?>
-                                        <tr>
+                                        <tr data-date="<?= $current_date ?>" data-copy="2">
                                             <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= $i ?></td>
                                             <?php if ($is_weekend || $is_holiday) : ?>
-                                                <td colspan="6" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><strong><?= $is_weekend ? getWeekendLabel($current_date) : 'HOLIDAY' ?></strong></td>
+                                                <td colspan="6" class="editable-label" data-field="label" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><strong><?= $is_weekend ? getWeekendLabel($current_date) : 'HOLIDAY' ?></strong></td>
                                             <?php else : ?>
-                                                <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
-                                                <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                <td class="editable-cell" data-field="morning_in" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                <td class="editable-cell" data-field="morning_out" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                <td class="editable-cell" data-field="afternoon_in" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                <td class="editable-cell" data-field="afternoon_out" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                <td class="editable-cell" data-field="undertime_hours" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
+                                                <td class="editable-cell" data-field="undertime_minutes" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"></td>
                                             <?php endif; ?>
                                         </tr>
                                     <?php endif ?>
@@ -789,3 +797,532 @@ function calculateWorkingDays($time_data, $selected_year, $selected_month) {
 </div>
 
 <?php $this->load->view('attendance/modal') ?>
+
+<style>
+/* Edit Mode Styles */
+.editable-cell.edit-mode,
+.editable-label.edit-mode {
+    background-color: #fff3cd !important;
+    cursor: pointer;
+    position: relative;
+}
+
+.editable-cell.edit-mode:hover,
+.editable-label.edit-mode:hover {
+    background-color: #ffeaa7 !important;
+}
+
+.editable-cell.editing,
+.editable-label.editing {
+    background-color: #d4edda !important;
+    padding: 0 !important;
+}
+
+.editable-cell input,
+.editable-label input,
+.editable-label select {
+    width: 100%;
+    border: 2px solid #28a745;
+    padding: 2px;
+    text-align: center;
+    font-size: 13px;
+    font-family: 'Times New Roman', serif;
+    box-sizing: border-box;
+}
+
+.editable-label select {
+    font-weight: bold;
+}
+
+.edit-mode-indicator {
+    position: fixed;
+    top: 80px;
+    right:25rem;
+    background-color: #ffc107;
+    color: #000;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: bold;
+    z-index: 1000;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+@media print {
+    .editable-cell.edit-mode,
+    .editable-label.edit-mode {
+        background-color: transparent !important;
+    }
+    .edit-mode-indicator {
+        display: none;
+    }
+}
+</style>
+
+<script>
+let editMode = false;
+let editedData = {};
+// Store personnel info for saving
+const personnelData = <?= json_encode(array_map(function($p) { 
+    return ['bio_id' => $p->bio_id, 'email' => $p->email]; 
+}, $person)) ?>;
+
+// Toggle Edit Mode
+function toggleEditMode() {
+    editMode = !editMode;
+    const btn = document.getElementById('toggleEditMode');
+    const saveBtn = document.getElementById('saveChanges');
+    
+    if (editMode) {
+        btn.classList.remove('btn-warning');
+        btn.classList.add('btn-secondary');
+        btn.innerHTML = '<span class="btn-label"><i class="fa fa-eye"></i></span> View Mode';
+        saveBtn.style.display = 'inline-block';
+        
+        // Add edit mode class to all editable cells
+        document.querySelectorAll('.editable-cell, .editable-label').forEach(cell => {
+            cell.classList.add('edit-mode');
+        });
+        
+        // Show indicator
+        if (!document.querySelector('.edit-mode-indicator')) {
+            const indicator = document.createElement('div');
+            indicator.className = 'edit-mode-indicator';
+            indicator.innerHTML = '✏️ EDIT MODE ACTIVE - Click cells to edit';
+            document.body.appendChild(indicator);
+        }
+        
+        // Add click listeners
+        addEditListeners();
+    } else {
+        btn.classList.remove('btn-secondary');
+        btn.classList.add('btn-warning');
+        btn.innerHTML = '<span class="btn-label"><i class="fa fa-edit"></i></span> Edit Mode';
+        saveBtn.style.display = 'none';
+        
+        // Remove edit mode class
+        document.querySelectorAll('.editable-cell, .editable-label').forEach(cell => {
+            cell.classList.remove('edit-mode');
+        });
+        
+        // Remove indicator
+        const indicator = document.querySelector('.edit-mode-indicator');
+        if (indicator) indicator.remove();
+        
+        // Remove click listeners
+        removeEditListeners();
+    }
+}
+
+// Add click listeners to editable cells
+function addEditListeners() {
+    document.querySelectorAll('.editable-cell.edit-mode').forEach(cell => {
+        cell.addEventListener('click', handleCellClick);
+    });
+    
+    document.querySelectorAll('.editable-label.edit-mode').forEach(cell => {
+        cell.addEventListener('click', handleLabelClick);
+    });
+}
+
+// Remove click listeners
+function removeEditListeners() {
+    document.querySelectorAll('.editable-cell').forEach(cell => {
+        cell.removeEventListener('click', handleCellClick);
+    });
+    
+    document.querySelectorAll('.editable-label').forEach(cell => {
+        cell.removeEventListener('click', handleLabelClick);
+    });
+}
+
+// Handle cell click for time/undertime fields
+function handleCellClick(e) {
+    if (!editMode) return;
+    
+    const cell = e.currentTarget;
+    if (cell.classList.contains('editing')) return;
+    
+    const currentValue = cell.textContent.trim();
+    const field = cell.getAttribute('data-field');
+    const row = cell.closest('tr');
+    const date = row.getAttribute('data-date');
+    const copy = row.getAttribute('data-copy');
+    
+    cell.classList.add('editing');
+    
+    // Create input based on field type
+    let input;
+    if (field.includes('undertime')) {
+        input = document.createElement('input');
+        input.type = 'number';
+        input.min = '0';
+        input.max = field.includes('hours') ? '8' : '59';
+        input.value = currentValue;
+    } else {
+        // For time fields, offer both time input and label selection
+        const container = document.createElement('div');
+        container.style.cssText = 'display: flex; flex-direction: column; gap: 2px;';
+        
+        input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = 'HH:MM';
+        input.value = currentValue;
+        input.style.cssText = 'width: 100%; border: 2px solid #28a745; padding: 2px; text-align: center; font-size: 13px; font-family: "Times New Roman", serif;';
+        
+        const select = document.createElement('select');
+        select.style.cssText = 'width: 100%; border: 2px solid #28a745; padding: 2px; text-align: center; font-size: 13px; font-family: "Times New Roman", serif; font-weight: bold;';
+        
+        const labelOptions = [
+            { value: '', text: '-- Or Select Label --' },
+            { value: 'ABSENT', text: 'ABSENT' },
+            { value: 'OFFICIAL BUSINESS', text: 'OFFICIAL BUSINESS' },
+            { value: 'OFFICIAL TIME', text: 'OFFICIAL TIME' },
+            { value: 'OFF', text: 'OFF' },
+            { value: 'LEAVE', text: 'LEAVE' },
+            { value: 'SICK LEAVE', text: 'SICK LEAVE' },
+            { value: 'VACATION LEAVE', text: 'VACATION LEAVE' },
+            { value: 'TRAINING', text: 'TRAINING' },
+            { value: 'CONFERENCE', text: 'CONFERENCE' }
+        ];
+        
+        labelOptions.forEach(opt => {
+            const option = document.createElement('option');
+            option.value = opt.value;
+            option.textContent = opt.text;
+            select.appendChild(option);
+        });
+        
+        container.appendChild(input);
+        container.appendChild(select);
+        cell.innerHTML = '';
+        cell.appendChild(container);
+        input.focus();
+        input.select();
+        
+        // Handle label selection
+        select.addEventListener('change', function() {
+            if (select.value) {
+                // Convert to merged label cell
+                convertToLabelCell(row, date, copy, select.value);
+            }
+        });
+        
+        // Handle blur (save time)
+        input.addEventListener('blur', function() {
+            setTimeout(() => {
+                if (document.activeElement !== select) {
+                    const newValue = input.value.trim();
+                    cell.textContent = newValue;
+                    cell.classList.remove('editing');
+                    
+                    // Store the edit
+                    const key = `${date}_${copy}`;
+                    if (!editedData[key]) {
+                        editedData[key] = { date: date, copy: copy };
+                    }
+                    editedData[key][field] = newValue;
+                    
+                    // Sync with the other copy
+                    syncCopies(date, copy, field, newValue);
+                }
+            }, 200);
+        });
+        
+        // Handle Enter key
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                input.blur();
+            }
+        });
+        
+        return; // Exit early since we've set up custom handling
+    }
+    
+    cell.innerHTML = '';
+    cell.appendChild(input);
+    input.focus();
+    input.select();
+    
+    // Handle blur (save)
+    input.addEventListener('blur', function() {
+        const newValue = input.value.trim();
+        cell.textContent = newValue;
+        cell.classList.remove('editing');
+        
+        // Store the edit
+        const key = `${date}_${copy}`;
+        if (!editedData[key]) {
+            editedData[key] = { date: date, copy: copy };
+        }
+        editedData[key][field] = newValue;
+        
+        // Sync with the other copy
+        syncCopies(date, copy, field, newValue);
+    });
+    
+    // Handle Enter key
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            input.blur();
+        }
+    });
+}
+
+// Handle label click for weekend/holiday labels
+function handleLabelClick(e) {
+    if (!editMode) return;
+    
+    const cell = e.currentTarget;
+    if (cell.classList.contains('editing')) return;
+    
+    const currentValue = cell.textContent.trim();
+    const row = cell.closest('tr');
+    const date = row.getAttribute('data-date');
+    const copy = row.getAttribute('data-copy');
+    
+    cell.classList.add('editing');
+    
+    // Create select dropdown with common options
+    const select = document.createElement('select');
+    const options = [
+        '', 
+        'SATURDAY', 
+        'SUNDAY', 
+        'HOLIDAY', 
+        'ABSENT', 
+        'OFFICIAL BUSINESS', 
+        'OFF', 
+        'LEAVE',
+        'SICK LEAVE',
+        'VACATION LEAVE',
+        'TRAINING',
+        'CONFERENCE'
+    ];
+    
+    options.forEach(opt => {
+        const option = document.createElement('option');
+        option.value = opt;
+        option.textContent = opt;
+        if (opt === currentValue || (opt && currentValue.includes(opt))) {
+            option.selected = true;
+        }
+        select.appendChild(option);
+    });
+    
+    cell.innerHTML = '';
+    cell.appendChild(select);
+    select.focus();
+    
+    // Handle change
+    select.addEventListener('change', function() {
+        const newValue = select.value;
+        if (newValue) {
+            cell.innerHTML = '<strong>' + newValue + '</strong>';
+        } else {
+            // Convert to individual cells
+            convertLabelToTimeCells(row, date, copy);
+            return;
+        }
+        cell.classList.remove('editing');
+        
+        // Store the edit
+        const key = `${date}_${copy}`;
+        if (!editedData[key]) {
+            editedData[key] = { date: date, copy: copy };
+        }
+        editedData[key]['label'] = newValue;
+        
+        // Sync with the other copy
+        syncCopies(date, copy, 'label', newValue);
+    });
+    
+    // Handle blur
+    select.addEventListener('blur', function() {
+        const newValue = select.value;
+        if (newValue) {
+            cell.innerHTML = '<strong>' + newValue + '</strong>';
+        } else {
+            cell.textContent = currentValue;
+        }
+        cell.classList.remove('editing');
+    });
+}
+
+// Convert individual time cells to merged label cell
+function convertToLabelCell(row, date, copy, labelValue) {
+    // Remove all existing time and undertime cells
+    const cellsToRemove = row.querySelectorAll('.editable-cell');
+    cellsToRemove.forEach(cell => cell.remove());
+    
+    // Create new merged label cell
+    const labelCell = document.createElement('td');
+    labelCell.colSpan = 6;
+    labelCell.className = 'editable-label edit-mode';
+    labelCell.setAttribute('data-field', 'label');
+    labelCell.style.cssText = 'border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: "Times New Roman", serif; color: black;';
+    labelCell.innerHTML = '<strong>' + labelValue + '</strong>';
+    
+    // Add to row
+    row.appendChild(labelCell);
+    
+    // Add click listener
+    labelCell.addEventListener('click', handleLabelClick);
+    
+    // Store the edit
+    const key = `${date}_${copy}`;
+    if (!editedData[key]) {
+        editedData[key] = { date: date, copy: copy };
+    }
+    editedData[key]['label'] = labelValue;
+    // Clear any time entries
+    editedData[key]['morning_in'] = '';
+    editedData[key]['morning_out'] = '';
+    editedData[key]['afternoon_in'] = '';
+    editedData[key]['afternoon_out'] = '';
+    editedData[key]['undertime_hours'] = '';
+    editedData[key]['undertime_minutes'] = '';
+    
+    // Sync with the other copy
+    const otherCopy = copy === '1' ? '2' : '1';
+    const otherRow = document.querySelector(`tr[data-date="${date}"][data-copy="${otherCopy}"]`);
+    if (otherRow) {
+        // Check if other row already has a label cell
+        const existingLabel = otherRow.querySelector('.editable-label');
+        if (!existingLabel) {
+            convertToLabelCell(otherRow, date, otherCopy, labelValue);
+        } else {
+            existingLabel.innerHTML = '<strong>' + labelValue + '</strong>';
+        }
+    }
+}
+
+// Convert label cell to individual time cells
+function convertLabelToTimeCells(row, date, copy) {
+    const labelCell = row.querySelector('.editable-label');
+    if (!labelCell) return;
+    
+    // Remove the label cell
+    labelCell.remove();
+    
+    // Add individual cells
+    const fields = ['morning_in', 'morning_out', 'afternoon_in', 'afternoon_out', 'undertime_hours', 'undertime_minutes'];
+    fields.forEach(field => {
+        const td = document.createElement('td');
+        td.className = 'editable-cell edit-mode';
+        td.setAttribute('data-field', field);
+        td.style.cssText = 'border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: "Times New Roman", serif; color: black;';
+        td.textContent = '';
+        row.appendChild(td);
+        td.addEventListener('click', handleCellClick);
+    });
+    
+    // Store the conversion
+    const key = `${date}_${copy}`;
+    if (!editedData[key]) {
+        editedData[key] = { date: date, copy: copy };
+    }
+    editedData[key]['converted'] = true;
+    editedData[key]['label'] = ''; // Clear the label
+    
+    // Sync with other copy - but prevent infinite loop
+    const otherCopy = copy === '1' ? '2' : '1';
+    const otherRow = document.querySelector(`tr[data-date="${date}"][data-copy="${otherCopy}"]`);
+    if (otherRow) {
+        const otherLabelCell = otherRow.querySelector('.editable-label');
+        if (otherLabelCell) {
+            // Only convert if it still has a label cell
+            convertLabelToTimeCells(otherRow, date, otherCopy);
+        }
+    }
+}
+
+// Sync changes between both DTR copies
+function syncCopies(date, currentCopy, field, value) {
+    const otherCopy = currentCopy === '1' ? '2' : '1';
+    const otherRow = document.querySelector(`tr[data-date="${date}"][data-copy="${otherCopy}"]`);
+    
+    if (!otherRow) return;
+    
+    if (field === 'label') {
+        const otherLabel = otherRow.querySelector('.editable-label');
+        if (otherLabel) {
+            if (value) {
+                otherLabel.innerHTML = '<strong>' + value + '</strong>';
+            }
+        }
+    } else {
+        // For time and undertime fields
+        const otherCell = otherRow.querySelector(`[data-field="${field}"]`);
+        if (otherCell) {
+            // Only update if not currently being edited
+            if (!otherCell.classList.contains('editing')) {
+                otherCell.textContent = value;
+            }
+            
+            // Also store in editedData for the other copy
+            const otherKey = `${date}_${otherCopy}`;
+            if (!editedData[otherKey]) {
+                editedData[otherKey] = { date: date, copy: otherCopy };
+            }
+            editedData[otherKey][field] = value;
+        }
+    }
+}
+
+// Save changes
+function saveChanges() {
+    if (Object.keys(editedData).length === 0) {
+        alert('No changes to save.');
+        return;
+    }
+    
+    if (!confirm('Save all changes? This will update the DTR records.')) {
+        return;
+    }
+    
+    // Show loading
+    const saveBtn = document.getElementById('saveChanges');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<span class="btn-label"><i class="fa fa-spinner fa-spin"></i></span> Saving...';
+    saveBtn.disabled = true;
+    
+    // Prepare data for submission
+    const changesArray = Object.values(editedData);
+    
+    // Send AJAX request
+    fetch('<?= site_url('attendance/save_dtr_edits') ?>', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            changes: changesArray,
+            month: document.getElementById('month').value,
+            personnel: personnelData
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Changes saved successfully!');
+            editedData = {};
+            // Optionally reload the page
+            location.reload();
+        } else {
+            alert('Error saving changes: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        alert('Error saving changes: ' + error.message);
+    })
+    .finally(() => {
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+    });
+}
+
+// Month change handler
+document.getElementById('month').addEventListener('change', function() {
+    window.location.href = '<?= site_url('admin/generate_dtr') ?>?date=' + this.value;
+});
+</script>

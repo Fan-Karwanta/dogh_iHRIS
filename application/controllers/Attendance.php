@@ -332,4 +332,164 @@ class Attendance extends CI_Controller
 
         $this->base->load('default', 'attendance/generate_bulk_dtr', $data);
     }
+
+    public function save_dtr_edits()
+    {
+        // Set JSON header
+        header('Content-Type: application/json');
+        
+        if (!$this->ion_auth->logged_in()) {
+            echo json_encode(['success' => false, 'message' => 'Not authenticated']);
+            return;
+        }
+
+        // Get JSON input
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        if (!$input || !isset($input['changes'])) {
+            echo json_encode(['success' => false, 'message' => 'Invalid input data']);
+            return;
+        }
+
+        $changes = $input['changes'];
+        $month = isset($input['month']) ? $input['month'] : date('Y-m');
+        $personnel = isset($input['personnel']) ? $input['personnel'] : [];
+        
+        // Get current user for audit trail
+        $user = $this->ion_auth->user()->row();
+        $updated_count = 0;
+        $errors = [];
+
+        // Load biometrics model if not loaded
+        $this->load->model('biometricsModel');
+
+        // Get bio_id and email from first personnel (assuming single person DTR)
+        $bio_id = !empty($personnel) && isset($personnel[0]['bio_id']) ? $personnel[0]['bio_id'] : null;
+        $email = !empty($personnel) && isset($personnel[0]['email']) ? $personnel[0]['email'] : null;
+
+        foreach ($changes as $change) {
+            try {
+                $date = $change['date'];
+                
+                // Skip if this is just a conversion flag
+                if (isset($change['converted']) && count($change) == 3) {
+                    continue;
+                }
+                
+                // Determine if this is a label change or time change
+                if (isset($change['label'])) {
+                    // Handle label changes (ABSENT, OFFICIAL BUSINESS, etc.)
+                    // Check if attendance record exists for this person and date
+                    if ($email) {
+                        $existing = $this->db->get_where('attendance', [
+                            'date' => $date,
+                            'email' => $email
+                        ])->row();
+                        
+                        if ($existing) {
+                            // Update with label as a note
+                            $this->db->where('date', $date);
+                            $this->db->where('email', $email);
+                            $this->db->update('attendance', [
+                                'notes' => $change['label'],
+                                'updated_at' => date('Y-m-d H:i:s')
+                            ]);
+                            $updated_count++;
+                        } else {
+                            // Create new attendance record with label
+                            $this->db->insert('attendance', [
+                                'date' => $date,
+                                'email' => $email,
+                                'notes' => $change['label'],
+                                'created_at' => date('Y-m-d H:i:s')
+                            ]);
+                            $updated_count++;
+                        }
+                    }
+                } else {
+                    // Handle time and undertime changes
+                    $update_data = [];
+                    
+                    // Process time fields
+                    if (isset($change['morning_in'])) {
+                        $update_data['am_in'] = $change['morning_in'] !== '' ? $this->parseTimeInput($change['morning_in']) : null;
+                    }
+                    if (isset($change['morning_out'])) {
+                        $update_data['am_out'] = $change['morning_out'] !== '' ? $this->parseTimeInput($change['morning_out']) : null;
+                    }
+                    if (isset($change['afternoon_in'])) {
+                        $update_data['pm_in'] = $change['afternoon_in'] !== '' ? $this->parseTimeInput($change['afternoon_in']) : null;
+                    }
+                    if (isset($change['afternoon_out'])) {
+                        $update_data['pm_out'] = $change['afternoon_out'] !== '' ? $this->parseTimeInput($change['afternoon_out']) : null;
+                    }
+                    if (isset($change['undertime_hours'])) {
+                        $update_data['undertime_hours'] = $change['undertime_hours'] !== '' ? intval($change['undertime_hours']) : null;
+                    }
+                    if (isset($change['undertime_minutes'])) {
+                        $update_data['undertime_minutes'] = $change['undertime_minutes'] !== '' ? intval($change['undertime_minutes']) : null;
+                    }
+                    
+                    if (!empty($update_data) && $bio_id) {
+                        // Check if biometric record exists for this person and date
+                        $bio_record = $this->db->get_where('biometrics', [
+                            'date' => $date,
+                            'bio_id' => $bio_id
+                        ])->row();
+                        
+                        if ($bio_record) {
+                            // Update existing biometric record
+                            $this->db->where('date', $date);
+                            $this->db->where('bio_id', $bio_id);
+                            $this->db->update('biometrics', $update_data);
+                            $updated_count++;
+                        } else {
+                            // Create new biometric record
+                            $update_data['date'] = $date;
+                            $update_data['bio_id'] = $bio_id;
+                            $this->db->insert('biometrics', $update_data);
+                            $updated_count++;
+                        }
+                    }
+                }
+            } catch (Exception $e) {
+                $errors[] = "Error updating {$date}: " . $e->getMessage();
+            }
+        }
+
+        if (count($errors) > 0) {
+            echo json_encode([
+                'success' => false, 
+                'message' => 'Some updates failed: ' . implode(', ', $errors),
+                'updated_count' => $updated_count
+            ]);
+        } else {
+            echo json_encode([
+                'success' => true, 
+                'message' => "Successfully updated {$updated_count} records",
+                'updated_count' => $updated_count
+            ]);
+        }
+    }
+
+    /**
+     * Parse time input - accepts HH:MM format or text
+     */
+    private function parseTimeInput($input)
+    {
+        $input = trim($input);
+        
+        // If it's already in time format (HH:MM or HH:MM:SS)
+        if (preg_match('/^\d{1,2}:\d{2}(:\d{2})?$/', $input)) {
+            // Add seconds if not present
+            if (substr_count($input, ':') == 1) {
+                $input .= ':00';
+            }
+            return $input;
+        }
+        
+        // If it's text (like "ABSENT", "OFF"), return as is
+        // You might want to handle this differently
+        return $input;
+    }
 }

@@ -330,6 +330,8 @@ class BiometricsModel extends CI_Model
             '06-12', // Independence Day
             '08-21', // Ninoy Aquino Day
             '08-25', // National Heroes Day (last Monday of August - approximation)
+            '10-28', // Davao Occ Araw
+            '10-31', // All Souls' Evening
             '11-30', // Bonifacio Day
             '12-25', // Christmas Day
             '12-30', // Rizal Day
