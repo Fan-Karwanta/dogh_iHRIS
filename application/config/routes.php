@@ -18,6 +18,8 @@ $route['create_personnel'] = 'personnel/create';
 $route['admin/attendance'] = 'attendance/index';
 $route['admin/generate_dtr'] = 'attendance/generate_dtr';
 $route['admin/generate_dtr/(:num)'] = 'attendance/generate_dtr/$1';
+$route['attendance/bulk_generate_dtr'] = 'attendance/bulk_generate_dtr';
+$route['attendance/get_personnel_by_department'] = 'attendance/get_personnel_by_department';
 
 $route['admin/biometrics'] = 'biometrics/index';
 $route['admin/generate_bio'] = 'biometrics/generate_bioreport';
@@ -37,3 +39,14 @@ $route['admin/audit_trail/export_csv'] = 'AuditTrail/export_csv';
 
 $route['admin/audit_reports'] = 'auditreport/index';
 $route['admin/audit_reports/personnel_analysis'] = 'auditreport/personnel_analysis';
+
+// Department Management Routes
+$route['settings/departments'] = 'settings/departments';
+$route['settings/assign_personnel'] = 'settings/assign_personnel';
+$route['settings/bulk_assign_personnel'] = 'settings/bulk_assign_personnel';
+$route['settings/search_personnel'] = 'settings/search_personnel';
+$route['settings/create_department'] = 'settings/create_department';
+$route['settings/update_department'] = 'settings/update_department';
+$route['settings/delete_department'] = 'settings/delete_department';
+$route['settings/get_department_stats'] = 'settings/get_department_stats';
+$route['settings/get_department_personnel'] = 'settings/get_department_personnel';

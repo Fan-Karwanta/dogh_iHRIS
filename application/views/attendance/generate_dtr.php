@@ -106,7 +106,11 @@ function calculateWorkingDays($time_data, $selected_year, $selected_month) {
                 <div class="card-head-row">
                     <div class="card-title">Personnel Time Record</div>
                     <div class="card-tools">
-                        <input type="month" class="form-control" id="month" name="start" min="2021-01" value="<?= isset($_GET['date']) ? $_GET['date'] : date('Y-m') ?>">
+                        <?php 
+                                        // Default to previous month instead of current month
+                                        $default_month = isset($_GET['date']) ? $_GET['date'] : date('Y-m', strtotime('first day of last month'));
+                                        ?>
+                                        <input type="month" class="form-control" id="month" name="start" min="2021-01" value="<?= $default_month ?>">
                     </div>
                 </div>
 
@@ -164,11 +168,15 @@ function calculateWorkingDays($time_data, $selected_year, $selected_month) {
                             $att_time = $att_query->result();
                             
                         } else {
-                            // Get biometric data using bio_id if available for current month
+                            // Default to previous month instead of current month
+                            $prev_month = date('m', strtotime('first day of last month'));
+                            $prev_year = date('Y', strtotime('first day of last month'));
+                            
+                            // Get biometric data using bio_id if available for previous month
                             if (!empty($bio_id)) {
                                 $bio_query = $this->db->query("SELECT date, am_in as morning_in, am_out as morning_out, pm_in as afternoon_in, pm_out as afternoon_out, undertime_hours, undertime_minutes 
                                                               FROM biometrics 
-                                                              WHERE bio_id='$bio_id' AND MONTH(date) = MONTH(CURRENT_DATE()) AND YEAR(date) = YEAR(CURRENT_DATE()) 
+                                                              WHERE bio_id='$bio_id' AND MONTH(date) = $prev_month AND YEAR(date) = $prev_year 
                                                               ORDER BY date ASC");
                                 $bio_time = $bio_query->result();
                             } else {
@@ -176,8 +184,8 @@ function calculateWorkingDays($time_data, $selected_year, $selected_month) {
                             }
                             
                             // Get manual attendance data using email
-                            $att_query = $this->db->query("SELECT * FROM attendance WHERE email='$email' AND MONTH(date) = MONTH(CURRENT_DATE())
-                                        AND YEAR(date) = YEAR(CURRENT_DATE()) ORDER BY attendance.date ASC");
+                            $att_query = $this->db->query("SELECT * FROM attendance WHERE email='$email' AND MONTH(date) = $prev_month
+                                        AND YEAR(date) = $prev_year ORDER BY attendance.date ASC");
                             $att_time = $att_query->result();
                         }
                         
@@ -266,7 +274,7 @@ function calculateWorkingDays($time_data, $selected_year, $selected_month) {
                                 <tr>
                                     <td style="text-align: left; border: none; padding: 5px 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black; vertical-align: bottom; width: 15%;">For the Month</td>
                                     <td colspan="3" style="text-align: center; border: none; border-bottom: 1px solid black; padding: 5px 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black; width: 85%; font-weight: bold;">
-                                        <?= isset($date) ? strtoupper(date('F Y', strtotime($date . '-01'))) : strtoupper(date('F Y')) ?>
+                                        <?= isset($date) ? strtoupper(date('F Y', strtotime($date . '-01'))) : strtoupper(date('F Y', strtotime('first day of last month'))) ?>
                                     </td>
                                 </tr>
                                 <tr>
@@ -332,8 +340,9 @@ function calculateWorkingDays($time_data, $selected_year, $selected_month) {
                                         '06-12', // Independence Day
                                         '08-21', // Ninoy Aquino Day
                                         '08-25', // National Heroes Day (last Monday of August - approximation)
-                                       // '10-28', // Davao Occ Araw
-                                       // '10-31', // All Souls' Evening
+                                        '10-28', // Davao Occ Araw
+                                        '10-31', // All Souls' Evening
+                                        '11-17', // Araw ng Malita
                                         '11-30', // Bonifacio Day
                                         '12-25', // Christmas Day
                                         '12-30', // Rizal Day
@@ -371,7 +380,7 @@ function calculateWorkingDays($time_data, $selected_year, $selected_month) {
                                 
                                 $b = 0;
                                 // Get the number of days in the selected month/year
-                                $selected_month = isset($date) ? $date : date('Y-m');
+                                $selected_month = isset($date) ? $date : date('Y-m', strtotime('first day of last month'));
                                 $days_in_month = date("t", strtotime($selected_month . '-01'));
                                 $selected_year = date('Y', strtotime($selected_month . '-01'));
                                 
@@ -594,7 +603,7 @@ function calculateWorkingDays($time_data, $selected_year, $selected_month) {
                                 <tr>
                                     <td style="text-align: left; border: none; padding: 5px 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black; vertical-align: bottom; width: 15%;">For the Month</td>
                                     <td colspan="3" style="text-align: center; border: none; border-bottom: 1px solid black; padding: 5px 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black; width: 85%; font-weight: bold;">
-                                        <?= isset($date) ? strtoupper(date('F Y', strtotime($date . '-01'))) : strtoupper(date('F Y')) ?>
+                                        <?= isset($date) ? strtoupper(date('F Y', strtotime($date . '-01'))) : strtoupper(date('F Y', strtotime('first day of last month'))) ?>
                                     </td>
                                 </tr>
                                 <tr>
@@ -834,6 +843,13 @@ function calculateWorkingDays($time_data, $selected_year, $selected_month) {
     font-weight: bold;
 }
 
+/* Partial label styling */
+.editable-cell strong {
+    font-weight: bold;
+    font-size: 13px;
+    font-family: 'Times New Roman', serif;
+}
+
 .edit-mode-indicator {
     position: fixed;
     top: 80px;
@@ -865,6 +881,157 @@ let editedData = {};
 const personnelData = <?= json_encode(array_map(function($p) { 
     return ['bio_id' => $p->bio_id, 'email' => $p->email]; 
 }, $person)) ?>;
+
+// Undertime calculation constants (8-5pm work schedule, 12-1pm lunch break)
+const STANDARD_AM_IN = 8 * 60;      // 8:00 AM = 480 minutes
+const STANDARD_AM_OUT = 12 * 60;    // 12:00 PM = 720 minutes
+const STANDARD_PM_IN = 13 * 60;     // 1:00 PM = 780 minutes
+const STANDARD_PM_OUT = 17 * 60;    // 5:00 PM = 1020 minutes
+
+// Convert time string (HH:MM or h:mm) to minutes from midnight
+function timeToMinutes(timeStr) {
+    if (!timeStr || timeStr.trim() === '') return null;
+    
+    // Handle various time formats
+    let hours, minutes;
+    const cleanTime = timeStr.trim();
+    
+    // Check for HH:MM format
+    const match = cleanTime.match(/^(\d{1,2}):(\d{2})$/);
+    if (match) {
+        hours = parseInt(match[1]);
+        minutes = parseInt(match[2]);
+        
+        // Convert 12-hour format to 24-hour if needed
+        // Assume times 1-7 are PM (13:00-19:00) and 8-12 are AM
+        if (hours >= 1 && hours <= 7) {
+            hours += 12; // Convert to PM
+        }
+        
+        return hours * 60 + minutes;
+    }
+    
+    return null;
+}
+
+// Calculate undertime based on time entries
+function calculateUndertime(amIn, amOut, pmIn, pmOut) {
+    const hasAmIn = amIn && amIn.trim() !== '';
+    const hasAmOut = amOut && amOut.trim() !== '';
+    const hasPmIn = pmIn && pmIn.trim() !== '';
+    const hasPmOut = pmOut && pmOut.trim() !== '';
+    
+    // If completely absent (no time entries at all), return null
+    if (!hasAmIn && !hasAmOut && !hasPmIn && !hasPmOut) {
+        return null;
+    }
+    
+    let undertimeMinutes = 0;
+    
+    // Convert time strings to minutes from midnight
+    const actualAmIn = hasAmIn ? timeToMinutes(amIn) : null;
+    const actualAmOut = hasAmOut ? timeToMinutes(amOut) : null;
+    const actualPmIn = hasPmIn ? timeToMinutes(pmIn) : null;
+    const actualPmOut = hasPmOut ? timeToMinutes(pmOut) : null;
+    
+    // Check if we have complete sessions
+    const hasCompleteMorning = hasAmIn && hasAmOut;
+    const hasCompleteAfternoon = hasPmIn && hasPmOut;
+    
+    // Calculate morning session undertime
+    if (hasCompleteMorning) {
+        // Complete morning session - calculate based on actual times
+        // Late arrival (after 8:00 AM)
+        if (actualAmIn > STANDARD_AM_IN) {
+            undertimeMinutes += (actualAmIn - STANDARD_AM_IN);
+        }
+        // Early departure (before 12:00 PM)
+        if (actualAmOut < STANDARD_AM_OUT) {
+            undertimeMinutes += (STANDARD_AM_OUT - actualAmOut);
+        }
+    } else if (hasAmIn || hasAmOut) {
+        // Incomplete morning session (only in or only out) = 4 hours undertime
+        undertimeMinutes += 240; // 4 hours = 240 minutes
+    } else {
+        // No morning session at all = 4 hours undertime
+        undertimeMinutes += 240; // 4 hours = 240 minutes
+    }
+    
+    // Calculate afternoon session undertime
+    if (hasCompleteAfternoon) {
+        // Complete afternoon session - calculate based on actual times
+        // Late arrival (after 1:00 PM)
+        if (actualPmIn > STANDARD_PM_IN) {
+            undertimeMinutes += (actualPmIn - STANDARD_PM_IN);
+        }
+        // Early departure (before 5:00 PM)
+        if (actualPmOut < STANDARD_PM_OUT) {
+            undertimeMinutes += (STANDARD_PM_OUT - actualPmOut);
+        }
+    } else if (hasPmIn || hasPmOut) {
+        // Incomplete afternoon session (only in or only out) = 4 hours undertime
+        undertimeMinutes += 240; // 4 hours = 240 minutes
+    } else {
+        // No afternoon session at all = 4 hours undertime
+        undertimeMinutes += 240; // 4 hours = 240 minutes
+    }
+    
+    // Convert total undertime minutes to hours and minutes
+    const undertimeHours = Math.floor(undertimeMinutes / 60);
+    const remainingMinutes = undertimeMinutes % 60;
+    
+    return {
+        hours: undertimeHours,
+        minutes: remainingMinutes,
+        totalMinutes: undertimeMinutes
+    };
+}
+
+// Get current time values from a row
+function getRowTimeValues(row) {
+    const amInCell = row.querySelector('[data-field="morning_in"]');
+    const amOutCell = row.querySelector('[data-field="morning_out"]');
+    const pmInCell = row.querySelector('[data-field="afternoon_in"]');
+    const pmOutCell = row.querySelector('[data-field="afternoon_out"]');
+    
+    return {
+        amIn: amInCell ? amInCell.textContent.trim() : '',
+        amOut: amOutCell ? amOutCell.textContent.trim() : '',
+        pmIn: pmInCell ? pmInCell.textContent.trim() : '',
+        pmOut: pmOutCell ? pmOutCell.textContent.trim() : ''
+    };
+}
+
+// Update undertime cells in a row based on calculated values
+function updateRowUndertime(row, date, copy) {
+    const timeValues = getRowTimeValues(row);
+    const undertime = calculateUndertime(timeValues.amIn, timeValues.amOut, timeValues.pmIn, timeValues.pmOut);
+    
+    const hoursCell = row.querySelector('[data-field="undertime_hours"]');
+    const minutesCell = row.querySelector('[data-field="undertime_minutes"]');
+    
+    if (hoursCell && minutesCell) {
+        if (undertime === null) {
+            hoursCell.textContent = '';
+            minutesCell.textContent = '';
+        } else {
+            hoursCell.textContent = undertime.hours;
+            minutesCell.textContent = undertime.minutes;
+        }
+        
+        // Store in editedData
+        const key = `${date}_${copy}`;
+        if (!editedData[key]) {
+            editedData[key] = { date: date, copy: copy };
+        }
+        editedData[key]['undertime_hours'] = undertime ? undertime.hours.toString() : '';
+        editedData[key]['undertime_minutes'] = undertime ? undertime.minutes.toString() : '';
+        
+        // Sync with other copy
+        syncCopies(date, copy, 'undertime_hours', undertime ? undertime.hours.toString() : '');
+        syncCopies(date, copy, 'undertime_minutes', undertime ? undertime.minutes.toString() : '');
+    }
+}
 
 // Toggle Edit Mode
 function toggleEditMode() {
@@ -974,21 +1141,32 @@ function handleCellClick(e) {
         
         const labelOptions = [
             { value: '', text: '-- Or Select Label --' },
-            { value: 'ABSENT', text: 'ABSENT' },
-            { value: 'OFFICIAL BUSINESS', text: 'OFFICIAL BUSINESS' },
-            { value: 'OFFICIAL TIME', text: 'OFFICIAL TIME' },
-            { value: 'OFF', text: 'OFF' },
-            { value: 'LEAVE', text: 'LEAVE' },
-            { value: 'SICK LEAVE', text: 'SICK LEAVE' },
-            { value: 'VACATION LEAVE', text: 'VACATION LEAVE' },
-            { value: 'TRAINING', text: 'TRAINING' },
-            { value: 'CONFERENCE', text: 'CONFERENCE' }
+            { value: 'ABSENT:full', text: 'ABSENT (Full Row)' },
+            { value: 'OFFICIAL BUSINESS:full', text: 'OFFICIAL BUSINESS (Full Row)' },
+            { value: 'OFFICIAL TIME:full', text: 'OFFICIAL TIME (Full Row)' },
+            { value: 'OFF:full', text: 'OFF (Full Row)' },
+            { value: 'LEAVE:full', text: 'LEAVE (Full Row)' },
+            { value: 'SICK LEAVE:full', text: 'SICK LEAVE (Full Row)' },
+            { value: 'VACATION LEAVE:full', text: 'VACATION LEAVE (Full Row)' },
+            { value: 'TRAINING:full', text: 'TRAINING (Full Row)' },
+            { value: 'HOLIDAY:full', text: 'HOLIDAY (Full Row)' },
+            { value: '---', text: '--- Partial Labels ---', disabled: true },
+            { value: 'ABSENT:partial', text: 'ABSENT (This Cell Only)' },
+            { value: 'OFFICIAL BUSINESS:partial', text: 'OFFICIAL BUSINESS (This Cell Only)' },
+            { value: 'OFFICIAL TIME:partial', text: 'OFFICIAL TIME (This Cell Only)' },
+            { value: 'OFF:partial', text: 'OFF (This Cell Only)' },
+            { value: 'LEAVE:partial', text: 'LEAVE (This Cell Only)' },
+            { value: 'SICK LEAVE:partial', text: 'SICK LEAVE (This Cell Only)' },
+            { value: 'VACATION LEAVE:partial', text: 'VACATION LEAVE (This Cell Only)' },
+            { value: 'TRAINING:partial', text: 'TRAINING (This Cell Only)' },
+            { value: 'HOLIDAY:partial', text: 'HOLIDAY (This Cell Only)' }
         ];
         
         labelOptions.forEach(opt => {
             const option = document.createElement('option');
             option.value = opt.value;
             option.textContent = opt.text;
+            if (opt.disabled) option.disabled = true;
             select.appendChild(option);
         });
         
@@ -1001,9 +1179,27 @@ function handleCellClick(e) {
         
         // Handle label selection
         select.addEventListener('change', function() {
-            if (select.value) {
-                // Convert to merged label cell
-                convertToLabelCell(row, date, copy, select.value);
+            if (select.value && select.value !== '---') {
+                const [labelText, mergeType] = select.value.split(':');
+                
+                if (mergeType === 'full') {
+                    // Convert entire row to merged label cell
+                    convertToLabelCell(row, date, copy, labelText);
+                } else if (mergeType === 'partial') {
+                    // Apply label to this cell only
+                    cell.innerHTML = '<strong>' + labelText + '</strong>';
+                    cell.classList.remove('editing');
+                    
+                    // Store the edit
+                    const key = `${date}_${copy}`;
+                    if (!editedData[key]) {
+                        editedData[key] = { date: date, copy: copy };
+                    }
+                    editedData[key][field] = labelText;
+                    
+                    // Sync with the other copy
+                    syncCopies(date, copy, field, labelText);
+                }
             }
         });
         
@@ -1024,6 +1220,9 @@ function handleCellClick(e) {
                     
                     // Sync with the other copy
                     syncCopies(date, copy, field, newValue);
+                    
+                    // Auto-calculate undertime after time field change
+                    updateRowUndertime(row, date, copy);
                 }
             }, 200);
         });
@@ -1090,13 +1289,13 @@ function handleLabelClick(e) {
         'SUNDAY', 
         'HOLIDAY', 
         'ABSENT', 
-        'OFFICIAL BUSINESS', 
+        'OFFICIAL BUSINESS',
+        'OFFICIAL TIME',
         'OFF', 
         'LEAVE',
         'SICK LEAVE',
         'VACATION LEAVE',
-        'TRAINING',
-        'CONFERENCE'
+        'TRAINING'
     ];
     
     options.forEach(opt => {
@@ -1256,7 +1455,16 @@ function syncCopies(date, currentCopy, field, value) {
         if (otherCell) {
             // Only update if not currently being edited
             if (!otherCell.classList.contains('editing')) {
-                otherCell.textContent = value;
+                // Check if value is a label (text) or time (contains colon or is number)
+                const isLabel = value && !value.match(/^\d{1,2}:\d{2}$/) && !value.match(/^\d+$/);
+                
+                if (isLabel) {
+                    // It's a partial label, apply bold formatting
+                    otherCell.innerHTML = '<strong>' + value + '</strong>';
+                } else {
+                    // It's a time or number, just set text
+                    otherCell.textContent = value;
+                }
             }
             
             // Also store in editedData for the other copy
@@ -1276,7 +1484,20 @@ function saveChanges() {
         return;
     }
     
-    if (!confirm('Save all changes? This will update the DTR records.')) {
+    // Prompt for reason before saving
+    const reason = prompt('Please provide a reason for this DTR edit (required for audit trail):', 'DTR Edit via Generate DTR Page');
+    
+    if (reason === null) {
+        // User cancelled
+        return;
+    }
+    
+    if (!reason.trim()) {
+        alert('A reason is required to save changes.');
+        return;
+    }
+    
+    if (!confirm('Save all changes? This will update the DTR records and be recorded in the edit monitoring.')) {
         return;
     }
     
@@ -1286,8 +1507,8 @@ function saveChanges() {
     saveBtn.innerHTML = '<span class="btn-label"><i class="fa fa-spinner fa-spin"></i></span> Saving...';
     saveBtn.disabled = true;
     
-    // Prepare data for submission
-    const changesArray = Object.values(editedData);
+    // Prepare data for submission - only use copy 1 to avoid duplicates
+    const changesArray = Object.values(editedData).filter(change => change.copy === '1');
     
     // Send AJAX request
     fetch('<?= site_url('attendance/save_dtr_edits') ?>', {
@@ -1298,15 +1519,16 @@ function saveChanges() {
         body: JSON.stringify({
             changes: changesArray,
             month: document.getElementById('month').value,
-            personnel: personnelData
+            personnel: personnelData,
+            reason: reason.trim()
         })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('Changes saved successfully!');
+            alert('Changes saved successfully! ' + data.message);
             editedData = {};
-            // Optionally reload the page
+            // Reload the page to show updated data
             location.reload();
         } else {
             alert('Error saving changes: ' + (data.message || 'Unknown error'));

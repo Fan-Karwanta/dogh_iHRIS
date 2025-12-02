@@ -25,18 +25,32 @@ This feature allows you to edit the DTR (Daily Time Record) preview directly bef
 - Enter numeric values only
 
 #### Special Labels
-- Click on weekend/holiday labels (SATURDAY, SUNDAY, HOLIDAY)
-- Select from dropdown:
-  - ABSENT
-  - OFFICIAL BUSINESS
-  - OFFICIAL TIME
-  - OFF
-  - LEAVE
-  - SICK LEAVE
-  - VACATION LEAVE
-  - TRAINING
-  - CONFERENCE
-  - Or leave blank to convert to time entry cells
+- Click on weekend/holiday labels (SATURDAY, SUNDAY, HOLIDAY) or any time cell
+- Select from dropdown with two options:
+  
+  **Full Row Labels** (merges all 6 cells):
+  - ABSENT (Full Row)
+  - OFFICIAL BUSINESS (Full Row)
+  - OFFICIAL TIME (Full Row)
+  - OFF (Full Row)
+  - LEAVE (Full Row)
+  - SICK LEAVE (Full Row)
+  - VACATION LEAVE (Full Row)
+  - TRAINING (Full Row)
+  - HOLIDAY (Full Row)
+  
+  **Partial Labels** (applies to single cell only):
+  - ABSENT (This Cell Only)
+  - OFFICIAL BUSINESS (This Cell Only)
+  - OFFICIAL TIME (This Cell Only)
+  - OFF (This Cell Only)
+  - LEAVE (This Cell Only)
+  - SICK LEAVE (This Cell Only)
+  - VACATION LEAVE (This Cell Only)
+  - TRAINING (This Cell Only)
+  - HOLIDAY (This Cell Only)
+  
+- Or leave blank to convert to time entry cells
 
 ### 3. **Weekend/Holiday Work**
 - If a person worked on a weekend or holiday, click the label cell
@@ -44,17 +58,39 @@ This feature allows you to edit the DTR (Daily Time Record) preview directly bef
 - The row will convert to individual time entry cells
 - Enter the actual work times
 
-### 4. **Blank Dates**
+### 4. **Mixed Cell Editing (NEW!)**
+- You can now have **time entries AND labels in the same row**
+- Example: `07:30 | OFFICIAL TIME | 05:10`
+- This allows you to show:
+  - Actual clock-in time (Morning In)
+  - Label for middle portion (Morning Out & Afternoon In)
+  - Actual clock-out time (Afternoon Out)
+
+**How to create mixed cells:**
+1. Enable Edit Mode
+2. Click Morning In cell → Enter `07:30`
+3. Click Morning Out cell → Select "OFFICIAL TIME (This Cell Only)"
+4. Click Afternoon In cell → Select "OFFICIAL TIME (This Cell Only)" (or leave as is)
+5. Click Afternoon Out cell → Enter `05:10`
+6. Result: `07:30 | OFFICIAL TIME | OFFICIAL TIME | 05:10`
+
+**Common Use Cases:**
+- Employee clocked in, then went on official business, then clocked out
+- Partial day leave (worked morning, leave in afternoon)
+- Training during work hours (clocked in, training, clocked out)
+
+### 5. **Blank Dates**
 - For dates with no attendance data
 - Click any cell to add time entries
 - Useful for adding ABSENT, OFFICIAL BUSINESS, or actual times
 
-### 5. **Automatic Synchronization**
+### 6. **Automatic Synchronization**
 - Both DTR copies (left and right) are automatically synchronized
 - Changes made to one copy instantly reflect on the other
 - Ensures consistency across both printed copies
+- Works for both full labels and partial labels
 
-### 6. **Save Changes**
+### 7. **Save Changes**
 - After making edits, click **"Save Changes"** button
 - Confirm the save operation
 - Changes are saved to the database
@@ -105,7 +141,30 @@ This feature allows you to edit the DTR (Daily Time Record) preview directly bef
 1. Enable Edit Mode
 2. Find the date
 3. Click the label cell (if weekend/holiday) or time cell
-4. Select "OFFICIAL BUSINESS" from dropdown
+4. Select "OFFICIAL BUSINESS (Full Row)" from dropdown
+
+#### Scenario 5: Mixed Cell - Partial Official Time
+**Situation**: Employee clocked in at 07:30, went on official business, came back and clocked out at 05:10
+
+1. Enable Edit Mode
+2. Find the date row
+3. Click **Morning In** cell → Enter `07:30` → Press Enter
+4. Click **Morning Out** cell → Select "OFFICIAL TIME (This Cell Only)" from dropdown
+5. Click **Afternoon In** cell → Select "OFFICIAL TIME (This Cell Only)" from dropdown
+6. Click **Afternoon Out** cell → Enter `05:10` → Press Enter
+7. Result displays: `07:30 | OFFICIAL TIME | OFFICIAL TIME | 05:10`
+8. Click "Save Changes"
+
+#### Scenario 6: Mixed Cell - Half Day Leave
+**Situation**: Employee worked morning (07:30-12:00), then took leave in afternoon
+
+1. Enable Edit Mode
+2. Click **Morning In** → Enter `07:30`
+3. Click **Morning Out** → Enter `12:00`
+4. Click **Afternoon In** → Select "LEAVE (This Cell Only)"
+5. Click **Afternoon Out** → Select "LEAVE (This Cell Only)"
+6. Result: `07:30 | 12:00 | LEAVE | LEAVE`
+7. Click "Save Changes"
 
 ## Technical Details
 

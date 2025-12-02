@@ -207,6 +207,7 @@ class Biometrics extends CI_Controller
         );
 
         $date =  $this->input->post('from');
+        $override_existing = $this->input->post('override_existing') == '1';
 
         $this->load->library('upload', $config);
         $this->form_validation->set_rules('import_file', 'CSV File', 'required');
@@ -400,18 +401,35 @@ class Biometrics extends CI_Controller
                         // Update existing record
                         $update_data = array('device_code' => $device_code);
                         
-                        foreach ($assigned_times as $slot => $time) {
-                            if (empty($checkAttend->$slot)) {
+                        if ($override_existing) {
+                            // Override mode: Replace all time slots with new data
+                            foreach ($assigned_times as $slot => $time) {
                                 $update_data[$slot] = $time;
+                            }
+                        } else {
+                            // Fill mode: Only fill empty time slots
+                            foreach ($assigned_times as $slot => $time) {
+                                if (empty($checkAttend->$slot) && !empty($time)) {
+                                    $update_data[$slot] = $time;
+                                }
                             }
                         }
                         
-                        if (count($update_data) > 1) {
-                            // Calculate undertime with updated data
-                            $final_am_in = !empty($update_data['am_in']) ? $update_data['am_in'] : $checkAttend->am_in;
-                            $final_am_out = !empty($update_data['am_out']) ? $update_data['am_out'] : $checkAttend->am_out;
-                            $final_pm_in = !empty($update_data['pm_in']) ? $update_data['pm_in'] : $checkAttend->pm_in;
-                            $final_pm_out = !empty($update_data['pm_out']) ? $update_data['pm_out'] : $checkAttend->pm_out;
+                        if ($override_existing || count($update_data) > 1) {
+                            // Calculate undertime based on mode
+                            if ($override_existing) {
+                                // Override mode: Use only new imported data
+                                $final_am_in = $assigned_times['am_in'] ?? null;
+                                $final_am_out = $assigned_times['am_out'] ?? null;
+                                $final_pm_in = $assigned_times['pm_in'] ?? null;
+                                $final_pm_out = $assigned_times['pm_out'] ?? null;
+                            } else {
+                                // Fill mode: Merge with existing data
+                                $final_am_in = !empty($update_data['am_in']) ? $update_data['am_in'] : $checkAttend->am_in;
+                                $final_am_out = !empty($update_data['am_out']) ? $update_data['am_out'] : $checkAttend->am_out;
+                                $final_pm_in = !empty($update_data['pm_in']) ? $update_data['pm_in'] : $checkAttend->pm_in;
+                                $final_pm_out = !empty($update_data['pm_out']) ? $update_data['pm_out'] : $checkAttend->pm_out;
+                            }
                             
                             $undertime = $this->calculateUndertime($final_am_in, $final_am_out, $final_pm_in, $final_pm_out);
                             
@@ -462,7 +480,8 @@ class Biometrics extends CI_Controller
                     $count++;
                 }
                 $this->session->set_flashdata('success', 'success');
-                $message = 'File Imported Successfully! ' . $count . ' records processed from ' . count($importRes) . ' total entries.';
+                $mode_text = $override_existing ? ' (Override Mode)' : ' (Fill Mode)';
+                $message = 'File Imported Successfully!' . $mode_text . ' ' . $count . ' records processed from ' . count($importRes) . ' total entries.';
                 if ($duplicates_removed > 0) {
                     $message .= ' ' . $duplicates_removed . ' duplicate entries removed (within 1-minute intervals).';
                 }
@@ -517,6 +536,20 @@ class Biometrics extends CI_Controller
         }
     }
 
+    /**
+     * Smart time assignment for biometric entries
+     * 
+     * Schedule: 8:00 AM - 5:00 PM with 12:00 PM - 1:00 PM lunch break
+     * 
+     * Time Slot Boundaries:
+     * - AM IN:  First punch between 5:00 AM and 11:59 AM (morning arrival)
+     * - AM OUT: Punch between 11:00 AM and 1:00 PM (leaving for lunch)
+     * - PM IN:  Punch between 12:00 PM and 2:00 PM (returning from lunch)
+     * - PM OUT: Last punch between 4:00 PM and 11:59 PM (end of day)
+     * 
+     * The algorithm uses sequential ordering - punches are sorted chronologically
+     * and assigned based on their position and time context.
+     */
     private function smartTimeAssignment($entries)
     {
         $assigned_times = array(
@@ -526,139 +559,176 @@ class Biometrics extends CI_Controller
             'pm_out' => null
         );
         
-        // Sort all entries chronologically first
+        if (empty($entries)) {
+            return $assigned_times;
+        }
+        
+        // Sort all entries chronologically
         usort($entries, function($a, $b) {
             return $a['timestamp'] - $b['timestamp'];
         });
         
         $entry_count = count($entries);
         
-        // SPECIAL HANDLING FOR 2 ENTRIES - HALF DAY DETECTION
-        if ($entry_count == 2) {
-            $first_time = $this->timeToMinutes($entries[0]['time']);
-            $second_time = $this->timeToMinutes($entries[1]['time']);
+        // Time boundaries in minutes from midnight
+        $MORNING_START = 300;   // 5:00 AM - earliest reasonable morning arrival
+        $MORNING_END = 720;     // 12:00 PM - end of morning session
+        $LUNCH_START = 660;     // 11:00 AM - earliest lunch out
+        $LUNCH_END = 840;       // 2:00 PM - latest lunch return
+        $AFTERNOON_START = 720; // 12:00 PM - earliest afternoon return
+        $AFTERNOON_END = 1020;  // 5:00 PM - standard end time
+        $EVENING_END = 1439;    // 11:59 PM - latest possible out
+        
+        // Get all times in minutes for easier comparison
+        $times_in_minutes = array();
+        foreach ($entries as $idx => $entry) {
+            $times_in_minutes[$idx] = $this->timeToMinutes($entry['time']);
+        }
+        
+        // CASE 1: Single entry
+        if ($entry_count == 1) {
+            $time = $times_in_minutes[0];
             
-            // Determine if it's morning half-day or afternoon half-day
-            // If both times are before 2:00 PM (840 minutes), it's likely morning half-day
-            if ($second_time <= 840) {
-                // Morning half-day: assign as am_in and am_out
+            if ($time <= $MORNING_END) {
+                // Morning time - assume AM IN
                 $assigned_times['am_in'] = $entries[0]['time'];
-                $assigned_times['am_out'] = $entries[1]['time'];
-            } 
-            // If first time is after 11:00 AM (660 minutes), it's likely afternoon half-day
-            else if ($first_time >= 660) {
-                // Afternoon half-day: assign as pm_in and pm_out
+            } else {
+                // Afternoon time - assume PM IN
                 $assigned_times['pm_in'] = $entries[0]['time'];
-                $assigned_times['pm_out'] = $entries[1]['time'];
             }
-            // If times span across lunch (first before 12:00, second after 1:00), it's full day with missing lunch
-            else if ($first_time < 720 && $second_time > 780) {
-                // Full day with missing lunch break: assign as am_in and pm_out
-                $assigned_times['am_in'] = $entries[0]['time'];
-                $assigned_times['pm_out'] = $entries[1]['time'];
-            }
-            // Default fallback for edge cases
-            else {
-                // Default to morning half-day
-                $assigned_times['am_in'] = $entries[0]['time'];
-                $assigned_times['am_out'] = $entries[1]['time'];
-            }
-            
             return $assigned_times;
         }
         
-        // ORIGINAL LOGIC FOR 1, 3, OR 4+ ENTRIES
-        // Separate times into categories based on time ranges
-        $morning_in_candidates = array();   // Before 8:00 AM
-        $lunch_time_candidates = array();   // 12:00 PM - 1:00 PM
-        $afternoon_out_candidates = array(); // 5:00 PM onwards
-        $other_times = array();             // Everything else
-        
-        foreach ($entries as $entry) {
-            $hour = (int)date('H', strtotime($entry['time']));
-            $minute = (int)date('i', strtotime($entry['time']));
-            $total_minutes = ($hour * 60) + $minute;
+        // CASE 2: Two entries - determine if half day or full day without lunch punch
+        if ($entry_count == 2) {
+            $first_time = $times_in_minutes[0];
+            $second_time = $times_in_minutes[1];
             
-            if ($total_minutes < 480) {
-                // Before 8:00 AM - Morning In
-                $morning_in_candidates[] = $entry;
-            } elseif ($total_minutes >= 720 && $total_minutes <= 780) {
-                // 12:00 PM - 1:00 PM - Could be Morning Out or Afternoon In
-                $lunch_time_candidates[] = $entry;
-            } elseif ($total_minutes >= 1020) {
-                // 5:00 PM onwards - Afternoon Out
-                $afternoon_out_candidates[] = $entry;
-            } else {
-                $other_times[] = $entry;
+            // Check if both are in the morning (before 1:00 PM = 780)
+            if ($second_time <= 780) {
+                // Morning half-day
+                $assigned_times['am_in'] = $entries[0]['time'];
+                $assigned_times['am_out'] = $entries[1]['time'];
             }
+            // Check if both are in the afternoon (first after 11:00 AM = 660)
+            else if ($first_time >= 660 && $first_time <= $LUNCH_END) {
+                // Afternoon half-day (came in around lunch, left in PM)
+                $assigned_times['pm_in'] = $entries[0]['time'];
+                $assigned_times['pm_out'] = $entries[1]['time'];
+            }
+            // First is clearly morning (before 11:00 AM), second is clearly afternoon (after 1:00 PM)
+            else if ($first_time < 660 && $second_time > 780) {
+                // Full day without lunch punches
+                $assigned_times['am_in'] = $entries[0]['time'];
+                $assigned_times['pm_out'] = $entries[1]['time'];
+            }
+            // Edge case: first around lunch time, second in afternoon
+            else if ($first_time >= 660 && $first_time <= 780 && $second_time > 780) {
+                // Could be: came at lunch, left in PM
+                $assigned_times['pm_in'] = $entries[0]['time'];
+                $assigned_times['pm_out'] = $entries[1]['time'];
+            }
+            // Default: treat as morning half-day
+            else {
+                $assigned_times['am_in'] = $entries[0]['time'];
+                $assigned_times['am_out'] = $entries[1]['time'];
+            }
+            return $assigned_times;
         }
         
-        // Assign Morning In (earliest time before 8:00 AM)
-        if (!empty($morning_in_candidates)) {
-            $assigned_times['am_in'] = $morning_in_candidates[0]['time'];
-        }
-        
-        // Assign Afternoon Out (latest time after 5:00 PM)
-        if (!empty($afternoon_out_candidates)) {
-            $assigned_times['pm_out'] = end($afternoon_out_candidates)['time'];
-        }
-        
-        // Handle lunch time entries (12:00-13:00)
-        if (!empty($lunch_time_candidates)) {
-            if (count($lunch_time_candidates) >= 2) {
-                // If we have 2+ lunch time entries, assign first as am_out, second as pm_in
-                $assigned_times['am_out'] = $lunch_time_candidates[0]['time'];
-                $assigned_times['pm_in'] = $lunch_time_candidates[1]['time'];
-            } else {
-                // Only one lunch time entry - determine if it's more likely am_out or pm_in
-                $time_entry = $lunch_time_candidates[0];
-                $hour = (int)date('H', strtotime($time_entry['time']));
-                $minute = (int)date('i', strtotime($time_entry['time']));
-                $total_minutes = ($hour * 60) + $minute;
+        // CASE 3: Three entries
+        if ($entry_count == 3) {
+            $first_time = $times_in_minutes[0];
+            $second_time = $times_in_minutes[1];
+            $third_time = $times_in_minutes[2];
+            
+            // Most likely: AM IN, (missing AM OUT or PM IN), PM OUT
+            // Determine which lunch punch is missing
+            
+            // If second time is around lunch (11:00 AM - 2:00 PM)
+            if ($second_time >= 660 && $second_time <= 840) {
+                // First is AM IN, second could be AM OUT or PM IN, third is PM OUT
+                $assigned_times['am_in'] = $entries[0]['time'];
+                $assigned_times['pm_out'] = $entries[2]['time'];
                 
-                // If closer to 12:00, it's likely am_out; if closer to 13:00, it's pm_in
-                if ($total_minutes <= 750) { // 12:30 PM or earlier
-                    $assigned_times['am_out'] = $time_entry['time'];
-                } else {
-                    $assigned_times['pm_in'] = $time_entry['time'];
+                // Determine if second is AM OUT or PM IN based on time
+                if ($second_time <= 750) { // 12:30 PM or earlier = AM OUT
+                    $assigned_times['am_out'] = $entries[1]['time'];
+                } else { // After 12:30 PM = PM IN
+                    $assigned_times['pm_in'] = $entries[1]['time'];
                 }
             }
+            // If second time is clearly afternoon (after 2:00 PM)
+            else if ($second_time > 840) {
+                // All three are: AM IN, PM IN, PM OUT (missing AM OUT)
+                $assigned_times['am_in'] = $entries[0]['time'];
+                $assigned_times['pm_in'] = $entries[1]['time'];
+                $assigned_times['pm_out'] = $entries[2]['time'];
+            }
+            // If second time is clearly morning (before 11:00 AM)
+            else if ($second_time < 660) {
+                // First two are morning, third is afternoon
+                $assigned_times['am_in'] = $entries[0]['time'];
+                $assigned_times['am_out'] = $entries[1]['time'];
+                $assigned_times['pm_out'] = $entries[2]['time'];
+            }
+            // Default fallback
+            else {
+                $assigned_times['am_in'] = $entries[0]['time'];
+                $assigned_times['am_out'] = $entries[1]['time'];
+                $assigned_times['pm_out'] = $entries[2]['time'];
+            }
+            return $assigned_times;
         }
         
-        // Handle other times (8:00 AM - 12:00 PM and 1:00 PM - 5:00 PM)
-        if (!empty($other_times)) {
-            foreach ($other_times as $entry) {
-                $hour = (int)date('H', strtotime($entry['time']));
-                $minute = (int)date('i', strtotime($entry['time']));
-                $total_minutes = ($hour * 60) + $minute;
-                
-                if ($total_minutes >= 480 && $total_minutes < 720) {
-                    // 8:00 AM - 12:00 PM - likely morning out if not already assigned
-                    if (empty($assigned_times['am_out'])) {
-                        $assigned_times['am_out'] = $entry['time'];
-                    }
-                } elseif ($total_minutes > 780 && $total_minutes < 1020) {
-                    // 1:00 PM - 5:00 PM - likely afternoon out if not already assigned
-                    if (empty($assigned_times['pm_out'])) {
-                        $assigned_times['pm_out'] = $entry['time'];
-                    }
-                }
+        // CASE 4: Four or more entries - full day with all punches
+        // Use first as AM IN, find lunch punches, use last as PM OUT
+        
+        $assigned_times['am_in'] = $entries[0]['time'];
+        $assigned_times['pm_out'] = $entries[$entry_count - 1]['time'];
+        
+        // Collect all middle entries in the lunch period (11:00 AM - 2:00 PM)
+        // These are potential AM OUT and PM IN candidates
+        $lunch_entries = array();
+        for ($i = 1; $i < $entry_count - 1; $i++) {
+            $time = $times_in_minutes[$i];
+            // Lunch period: 11:00 AM (660) to 2:00 PM (840)
+            if ($time >= 660 && $time <= 840) {
+                $lunch_entries[] = array(
+                    'index' => $i,
+                    'time' => $time,
+                    'time_str' => $entries[$i]['time']
+                );
             }
         }
         
-        // Final validation: ensure we don't have impossible combinations
-        // If we have am_out but no am_in, and there's an early time, use it for am_in
-        if (!empty($assigned_times['am_out']) && empty($assigned_times['am_in'])) {
-            foreach ($entries as $entry) {
-                $entry_timestamp = strtotime($entry['date'] . ' ' . $entry['time']);
-                $am_out_timestamp = strtotime($entry['date'] . ' ' . $assigned_times['am_out']);
-                
-                if ($entry_timestamp < $am_out_timestamp) {
-                    $assigned_times['am_in'] = $entry['time'];
-                    break;
-                }
+        // Sort lunch entries by time (should already be sorted, but ensure)
+        usort($lunch_entries, function($a, $b) {
+            return $a['time'] - $b['time'];
+        });
+        
+        $lunch_count = count($lunch_entries);
+        
+        if ($lunch_count == 0) {
+            // No lunch punches - leave AM OUT and PM IN empty
+        } else if ($lunch_count == 1) {
+            // Single lunch punch - decide based on time
+            $lunch_time = $lunch_entries[0]['time'];
+            if ($lunch_time <= 750) { // 12:30 PM or earlier = AM OUT
+                $assigned_times['am_out'] = $lunch_entries[0]['time_str'];
+            } else { // After 12:30 PM = PM IN
+                $assigned_times['pm_in'] = $lunch_entries[0]['time_str'];
             }
+        } else {
+            // Two or more lunch punches
+            // CRITICAL FIX: Use chronological order - first is AM OUT, second is PM IN
+            // This ensures AM OUT is always before PM IN
+            $assigned_times['am_out'] = $lunch_entries[0]['time_str'];
+            $assigned_times['pm_in'] = $lunch_entries[1]['time_str'];
         }
+        
+        // Final validation: Ensure AM OUT < PM IN (swap if needed)
+        $this->validateAndFixTimeOrder($assigned_times);
         
         return $assigned_times;
     }
@@ -767,6 +837,124 @@ class Biometrics extends CI_Controller
         $minutes = intval($time_parts[1]);
         
         return ($hours * 60) + $minutes;
+    }
+    
+    /**
+     * Validate and fix time order to ensure AM OUT < PM IN
+     * This is a safety check to prevent illogical time assignments
+     * where AM OUT appears later than PM IN
+     * 
+     * @param array &$assigned_times Reference to the assigned times array
+     */
+    private function validateAndFixTimeOrder(&$assigned_times)
+    {
+        // Only validate if both AM OUT and PM IN are set
+        if (empty($assigned_times['am_out']) || empty($assigned_times['pm_in'])) {
+            return;
+        }
+        
+        $am_out_minutes = $this->timeToMinutes($assigned_times['am_out']);
+        $pm_in_minutes = $this->timeToMinutes($assigned_times['pm_in']);
+        
+        // If AM OUT is later than or equal to PM IN, swap them
+        // This ensures chronological order: AM OUT should always be before PM IN
+        if ($am_out_minutes >= $pm_in_minutes) {
+            $temp = $assigned_times['am_out'];
+            $assigned_times['am_out'] = $assigned_times['pm_in'];
+            $assigned_times['pm_in'] = $temp;
+        }
+    }
+
+    /**
+     * Fix existing records where AM OUT > PM IN
+     * This corrects data that was imported before the time order fix was applied
+     * Access via: /biometrics/fix_time_order
+     */
+    public function fix_time_order()
+    {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        // Check if user is admin
+        if (!$this->ion_auth->is_admin()) {
+            $this->session->set_flashdata('success', 'danger');
+            $this->session->set_flashdata('message', 'You do not have permission to access this page.');
+            redirect('admin/dashboard', 'refresh');
+        }
+
+        // Get optional date range from query parameters
+        $start_date = $this->input->get('start_date');
+        $end_date = $this->input->get('end_date');
+        $dry_run = $this->input->get('dry_run') !== 'false'; // Default to dry run for safety
+
+        // Build query to find records where AM OUT > PM IN
+        $this->db->select('id, bio_id, date, am_out, pm_in');
+        $this->db->from('biometrics');
+        $this->db->where('am_out IS NOT NULL', null, false);
+        $this->db->where('pm_in IS NOT NULL', null, false);
+        $this->db->where('am_out != ""', null, false);
+        $this->db->where('pm_in != ""', null, false);
+        
+        if ($start_date) {
+            $this->db->where('date >=', $start_date);
+        }
+        if ($end_date) {
+            $this->db->where('date <=', $end_date);
+        }
+        
+        $records = $this->db->get()->result();
+        
+        $fixed_count = 0;
+        $issues_found = array();
+        
+        foreach ($records as $record) {
+            $am_out_minutes = $this->timeToMinutes($record->am_out);
+            $pm_in_minutes = $this->timeToMinutes($record->pm_in);
+            
+            // Check if AM OUT is later than or equal to PM IN (wrong order)
+            if ($am_out_minutes >= $pm_in_minutes) {
+                $issues_found[] = array(
+                    'id' => $record->id,
+                    'bio_id' => $record->bio_id,
+                    'date' => $record->date,
+                    'old_am_out' => $record->am_out,
+                    'old_pm_in' => $record->pm_in,
+                    'new_am_out' => $record->pm_in,
+                    'new_pm_in' => $record->am_out
+                );
+                
+                if (!$dry_run) {
+                    // Swap the values
+                    $update_data = array(
+                        'am_out' => $record->pm_in,
+                        'pm_in' => $record->am_out
+                    );
+                    
+                    $this->db->where('id', $record->id);
+                    $this->db->update('biometrics', $update_data);
+                    $fixed_count++;
+                }
+            }
+        }
+        
+        // Return results as JSON
+        $result = array(
+            'dry_run' => $dry_run,
+            'total_records_checked' => count($records),
+            'issues_found' => count($issues_found),
+            'records_fixed' => $fixed_count,
+            'details' => $issues_found
+        );
+        
+        if ($dry_run) {
+            $result['message'] = 'Dry run complete. ' . count($issues_found) . ' records need fixing. Add ?dry_run=false to actually fix them.';
+        } else {
+            $result['message'] = 'Fixed ' . $fixed_count . ' records where AM OUT was later than PM IN.';
+        }
+        
+        header('Content-Type: application/json');
+        echo json_encode($result, JSON_PRETTY_PRINT);
     }
 
     public function getBio()

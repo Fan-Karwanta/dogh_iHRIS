@@ -177,4 +177,263 @@ class Settings extends CI_Controller
 
         redirect($_SERVER['HTTP_REFERER'], 'refresh');
     }
+
+    /**
+     * Department Management - Eagle's Eye View
+     */
+    public function departments()
+    {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        if (!$this->ion_auth->is_admin()) {
+            $this->session->set_flashdata('success', 'danger');
+            $this->session->set_flashdata('message', 'Access denied. Admin privileges required.');
+            redirect('admin/dashboard', 'refresh');
+        }
+
+        $data['title'] = 'Department Management';
+        $data['departments_data'] = $this->departmentModel->get_personnel_by_department();
+        $data['statistics'] = $this->departmentModel->get_department_statistics();
+        $data['all_departments'] = $this->departmentModel->get_all_departments(true);
+
+        $this->base->load('default', 'settings/departments', $data);
+    }
+
+    /**
+     * Get personnel for a specific department (AJAX)
+     */
+    public function get_department_personnel()
+    {
+        if (!$this->ion_auth->logged_in() || !$this->ion_auth->is_admin()) {
+            echo json_encode(array('success' => false, 'message' => 'Unauthorized'));
+            return;
+        }
+
+        $department_id = $this->input->post('department_id');
+        
+        if ($department_id === 'unassigned' || $department_id === '') {
+            $personnel = $this->departmentModel->get_department_personnel(null);
+        } else {
+            $personnel = $this->departmentModel->get_department_personnel($department_id);
+        }
+
+        echo json_encode(array('success' => true, 'data' => $personnel));
+    }
+
+    /**
+     * Assign personnel to department (AJAX)
+     */
+    public function assign_personnel()
+    {
+        if (!$this->ion_auth->logged_in() || !$this->ion_auth->is_admin()) {
+            echo json_encode(array('success' => false, 'message' => 'Unauthorized'));
+            return;
+        }
+
+        $personnel_id = $this->input->post('personnel_id');
+        $department_id = $this->input->post('department_id');
+
+        if (empty($personnel_id)) {
+            echo json_encode(array('success' => false, 'message' => 'Personnel ID is required'));
+            return;
+        }
+
+        // Convert 'null' string or empty to actual null
+        if ($department_id === 'null' || $department_id === '' || $department_id === 'unassigned') {
+            $department_id = null;
+        }
+
+        $result = $this->departmentModel->assign_personnel_to_department($personnel_id, $department_id);
+
+        if ($result >= 0) {
+            // Get updated statistics
+            $stats = $this->departmentModel->get_department_statistics();
+            echo json_encode(array(
+                'success' => true, 
+                'message' => 'Personnel assigned successfully',
+                'statistics' => $stats
+            ));
+        } else {
+            echo json_encode(array('success' => false, 'message' => 'Failed to assign personnel'));
+        }
+    }
+
+    /**
+     * Bulk assign personnel to department (AJAX)
+     */
+    public function bulk_assign_personnel()
+    {
+        if (!$this->ion_auth->logged_in() || !$this->ion_auth->is_admin()) {
+            echo json_encode(array('success' => false, 'message' => 'Unauthorized'));
+            return;
+        }
+
+        $personnel_ids = $this->input->post('personnel_ids');
+        $department_id = $this->input->post('department_id');
+
+        if (empty($personnel_ids) || !is_array($personnel_ids)) {
+            echo json_encode(array('success' => false, 'message' => 'No personnel selected'));
+            return;
+        }
+
+        // Convert 'null' string or empty to actual null
+        if ($department_id === 'null' || $department_id === '' || $department_id === 'unassigned') {
+            $department_id = null;
+        }
+
+        $result = $this->departmentModel->bulk_assign_personnel($personnel_ids, $department_id);
+
+        if ($result >= 0) {
+            $stats = $this->departmentModel->get_department_statistics();
+            echo json_encode(array(
+                'success' => true, 
+                'message' => $result . ' personnel assigned successfully',
+                'statistics' => $stats
+            ));
+        } else {
+            echo json_encode(array('success' => false, 'message' => 'Failed to assign personnel'));
+        }
+    }
+
+    /**
+     * Search personnel (AJAX)
+     */
+    public function search_personnel()
+    {
+        if (!$this->ion_auth->logged_in() || !$this->ion_auth->is_admin()) {
+            echo json_encode(array('success' => false, 'message' => 'Unauthorized'));
+            return;
+        }
+
+        $search_term = $this->input->post('search_term');
+
+        if (empty($search_term)) {
+            echo json_encode(array('success' => false, 'message' => 'Search term is required'));
+            return;
+        }
+
+        $results = $this->departmentModel->search_personnel($search_term);
+        echo json_encode(array('success' => true, 'data' => $results));
+    }
+
+    /**
+     * Create new department (AJAX)
+     */
+    public function create_department()
+    {
+        if (!$this->ion_auth->logged_in() || !$this->ion_auth->is_admin()) {
+            echo json_encode(array('success' => false, 'message' => 'Unauthorized'));
+            return;
+        }
+
+        $name = $this->input->post('name');
+        $code = $this->input->post('code');
+        $description = $this->input->post('description');
+        $color = $this->input->post('color') ?: '#3498db';
+
+        if (empty($name) || empty($code)) {
+            echo json_encode(array('success' => false, 'message' => 'Name and code are required'));
+            return;
+        }
+
+        // Check if code already exists
+        $existing = $this->departmentModel->get_department_by_code($code);
+        if ($existing) {
+            echo json_encode(array('success' => false, 'message' => 'Department code already exists'));
+            return;
+        }
+
+        $data = array(
+            'name' => $name,
+            'code' => strtoupper($code),
+            'description' => $description,
+            'color' => $color,
+            'status' => 1
+        );
+
+        $id = $this->departmentModel->create_department($data);
+
+        if ($id) {
+            echo json_encode(array('success' => true, 'message' => 'Department created successfully', 'id' => $id));
+        } else {
+            echo json_encode(array('success' => false, 'message' => 'Failed to create department'));
+        }
+    }
+
+    /**
+     * Update department (AJAX)
+     */
+    public function update_department()
+    {
+        if (!$this->ion_auth->logged_in() || !$this->ion_auth->is_admin()) {
+            echo json_encode(array('success' => false, 'message' => 'Unauthorized'));
+            return;
+        }
+
+        $id = $this->input->post('id');
+        $name = $this->input->post('name');
+        $description = $this->input->post('description');
+        $color = $this->input->post('color');
+
+        if (empty($id) || empty($name)) {
+            echo json_encode(array('success' => false, 'message' => 'ID and name are required'));
+            return;
+        }
+
+        $data = array(
+            'name' => $name,
+            'description' => $description,
+            'color' => $color
+        );
+
+        $result = $this->departmentModel->update_department($id, $data);
+
+        if ($result >= 0) {
+            echo json_encode(array('success' => true, 'message' => 'Department updated successfully'));
+        } else {
+            echo json_encode(array('success' => false, 'message' => 'Failed to update department'));
+        }
+    }
+
+    /**
+     * Delete department (AJAX)
+     */
+    public function delete_department()
+    {
+        if (!$this->ion_auth->logged_in() || !$this->ion_auth->is_admin()) {
+            echo json_encode(array('success' => false, 'message' => 'Unauthorized'));
+            return;
+        }
+
+        $id = $this->input->post('id');
+
+        if (empty($id)) {
+            echo json_encode(array('success' => false, 'message' => 'Department ID is required'));
+            return;
+        }
+
+        $result = $this->departmentModel->delete_department($id);
+
+        if ($result) {
+            echo json_encode(array('success' => true, 'message' => 'Department deleted successfully'));
+        } else {
+            echo json_encode(array('success' => false, 'message' => 'Failed to delete department'));
+        }
+    }
+
+    /**
+     * Get department statistics (AJAX)
+     */
+    public function get_department_stats()
+    {
+        if (!$this->ion_auth->logged_in() || !$this->ion_auth->is_admin()) {
+            echo json_encode(array('success' => false, 'message' => 'Unauthorized'));
+            return;
+        }
+
+        $stats = $this->departmentModel->get_department_statistics();
+        echo json_encode(array('success' => true, 'data' => $stats));
+    }
 }

@@ -1,4 +1,7 @@
-<?php $current_page = $this->uri->segment(2); ?>
+<?php 
+$current_page = $this->uri->segment(2); 
+$current_controller = $this->uri->segment(1);
+?>
 <!-- Sidebar -->
 <div class="sidebar sidebar-style-2" data-background-color="dark2">
     <div class="sidebar-wrapper scrollbar scrollbar-inner">
@@ -96,17 +99,22 @@
                         </span>
                         <h4 class="text-section">System</h4>
                     </li>
-                    <li class="nav-item <?= $current_page == 'users' ? 'active' : null ?>">
+                    <li class="nav-item <?= $current_page == 'users' || ($current_controller == 'settings' && $current_page == 'departments') ? 'active' : null ?>">
                         <a data-toggle="collapse" href="#settings">
                             <i class="fas fa-cogs"></i>
                             <p>Settings</p>
                             <span class="caret"></span>
                         </a>
-                        <div class="collapse <?= $current_page == 'users' ? 'show' : null ?>" id="settings">
+                        <div class="collapse <?= $current_page == 'users' || ($current_controller == 'settings' && $current_page == 'departments') ? 'show' : null ?>" id="settings">
                             <ul class="nav nav-collapse">
                                 <li class="<?= $current_page == 'users' ? 'active' : null ?>">
                                     <a href="<?= site_url('admin/users') ?>">
                                         <span class="sub-item">Users</span>
+                                    </a>
+                                </li>
+                                <li class="<?= ($current_controller == 'settings' && $current_page == 'departments') ? 'active' : null ?>">
+                                    <a href="<?= site_url('settings/departments') ?>">
+                                        <span class="sub-item">Departments</span>
                                     </a>
                                 </li>
                                 <li>

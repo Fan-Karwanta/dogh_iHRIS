@@ -154,6 +154,26 @@
                         <input type="file" class="form-control" name="import_file" accept=".csv" required>
                         <small class="form-text text-muted">Select the CSV file exported from your biometric device</small>
                     </div>
+                    <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="override_existing" name="override_existing" value="1">
+                            <label class="custom-control-label" for="override_existing">
+                                <strong>Override existing records</strong>
+                            </label>
+                        </div>
+                        <small class="form-text text-muted">
+                            <i class="fa fa-info-circle"></i> When checked, imported data will replace existing time entries for the same employee and date. 
+                            When unchecked, only empty time slots will be filled.
+                        </small>
+                    </div>
+                    <div class="alert alert-warning" id="override_warning" style="display: none;">
+                        <i class="fa fa-exclamation-triangle"></i> <strong>Warning:</strong> Override mode will replace all existing time entries with the new imported data. This action cannot be undone.
+                    </div>
+                    <script>
+                        document.getElementById('override_existing').addEventListener('change', function() {
+                            document.getElementById('override_warning').style.display = this.checked ? 'block' : 'none';
+                        });
+                    </script>
 
             </div>
             <div class="modal-footer">

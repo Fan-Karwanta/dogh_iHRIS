@@ -137,5 +137,6 @@ $autoload['model'] = array(
     'personnelModel',
     'attendanceModel',
     'biometricsModel',
-    'auditTrailModel'
+    'auditTrailModel',
+    'departmentModel'
 );

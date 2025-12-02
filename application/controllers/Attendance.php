@@ -104,10 +104,22 @@ class Attendance extends CI_Controller
             redirect('auth/login', 'refresh');
         }
 
-        // If no ID provided, show personnel selector
+        // If no ID provided, show personnel selector with department filter
         if (empty($id)) {
             $data['title'] = 'Generate DTR - Select Personnel';
-            $data['all_personnel'] = $this->personnelModel->personnels();
+            
+            // Get personnel with department information
+            $this->db->select('personnels.*, departments.name as department_name, departments.color as department_color');
+            $this->db->from('personnels');
+            $this->db->join('departments', 'departments.id = personnels.department_id', 'left');
+            $this->db->where('personnels.status', 1);
+            $this->db->order_by('personnels.lastname', 'ASC');
+            $data['all_personnel'] = $this->db->get()->result();
+            
+            // Get departments for filtering
+            $this->load->model('departmentModel');
+            $data['departments'] = $this->departmentModel->get_all_departments();
+            
             $this->base->load('default', 'attendance/select_personnel_dtr', $data);
             return;
         }
@@ -119,6 +131,69 @@ class Attendance extends CI_Controller
         $data['attendance'] = $this->attendanceModel->attendance($id);
 
         $this->base->load('default', 'attendance/generate_dtr', $data);
+    }
+    
+    /**
+     * Bulk generate DTR for multiple personnel
+     * Supports department filtering and individual selection
+     */
+    public function bulk_generate_dtr()
+    {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        // Get selected personnel IDs from POST
+        $personnel_ids = $this->input->post('personnel_ids');
+        
+        if (empty($personnel_ids) || !is_array($personnel_ids)) {
+            $this->session->set_flashdata('error', 'Please select at least one personnel');
+            redirect('admin/generate_dtr', 'refresh');
+            return;
+        }
+
+        // Get personnel data for selected IDs
+        $this->db->where_in('id', $personnel_ids);
+        $this->db->order_by('lastname', 'ASC');
+        $data['person'] = $this->db->get('personnels')->result();
+
+        $data['title'] = 'Bulk Generate DTR (' . count($data['person']) . ' Personnel)';
+
+        // Use the bulk DTR view which has proper page breaks for printing
+        $this->base->load('default', 'attendance/generate_bulk_dtr', $data);
+    }
+    
+    /**
+     * Get personnel by department (AJAX)
+     */
+    public function get_personnel_by_department()
+    {
+        if (!$this->ion_auth->logged_in()) {
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+
+        $department_id = $this->input->post('department_id');
+        
+        $this->db->select('personnels.*, departments.name as department_name');
+        $this->db->from('personnels');
+        $this->db->join('departments', 'departments.id = personnels.department_id', 'left');
+        
+        if ($department_id === '0' || $department_id === 0) {
+            // Unassigned personnel
+            $this->db->where('personnels.department_id IS NULL');
+        } elseif (!empty($department_id) && $department_id !== 'all') {
+            $this->db->where('personnels.department_id', $department_id);
+        }
+        
+        $this->db->where('personnels.status', 1);
+        $this->db->order_by('personnels.lastname', 'ASC');
+        $personnel = $this->db->get()->result();
+
+        echo json_encode([
+            'success' => true,
+            'personnel' => $personnel
+        ]);
     }
 
     public function update()
@@ -354,10 +429,12 @@ class Attendance extends CI_Controller
         $changes = $input['changes'];
         $month = isset($input['month']) ? $input['month'] : date('Y-m');
         $personnel = isset($input['personnel']) ? $input['personnel'] : [];
+        $reason = isset($input['reason']) ? $input['reason'] : 'DTR Edit via Generate DTR Page';
         
         // Get current user for audit trail
         $user = $this->ion_auth->user()->row();
         $updated_count = 0;
+        $created_count = 0;
         $errors = [];
 
         // Load biometrics model if not loaded
@@ -377,7 +454,7 @@ class Attendance extends CI_Controller
                 }
                 
                 // Determine if this is a label change or time change
-                if (isset($change['label'])) {
+                if (isset($change['label']) && !empty($change['label'])) {
                     // Handle label changes (ABSENT, OFFICIAL BUSINESS, etc.)
                     // Check if attendance record exists for this person and date
                     if ($email) {
@@ -403,7 +480,7 @@ class Attendance extends CI_Controller
                                 'notes' => $change['label'],
                                 'created_at' => date('Y-m-d H:i:s')
                             ]);
-                            $updated_count++;
+                            $created_count++;
                         }
                     }
                 } else {
@@ -438,17 +515,19 @@ class Attendance extends CI_Controller
                         ])->row();
                         
                         if ($bio_record) {
-                            // Update existing biometric record
-                            $this->db->where('date', $date);
-                            $this->db->where('bio_id', $bio_id);
-                            $this->db->update('biometrics', $update_data);
-                            $updated_count++;
+                            // Update existing biometric record using BiometricsModel for audit trail
+                            $result = $this->biometricsModel->update($update_data, $bio_record->id, $reason);
+                            if ($result) {
+                                $updated_count++;
+                            }
                         } else {
                             // Create new biometric record
                             $update_data['date'] = $date;
                             $update_data['bio_id'] = $bio_id;
-                            $this->db->insert('biometrics', $update_data);
-                            $updated_count++;
+                            $result = $this->biometricsModel->save($update_data, $reason);
+                            if ($result) {
+                                $created_count++;
+                            }
                         }
                     }
                 }
@@ -457,17 +536,32 @@ class Attendance extends CI_Controller
             }
         }
 
+        $total_affected = $updated_count + $created_count;
+        
         if (count($errors) > 0) {
             echo json_encode([
                 'success' => false, 
                 'message' => 'Some updates failed: ' . implode(', ', $errors),
-                'updated_count' => $updated_count
+                'updated_count' => $updated_count,
+                'created_count' => $created_count
             ]);
         } else {
+            $message = "Successfully processed {$total_affected} record(s)";
+            if ($updated_count > 0) {
+                $message .= " ({$updated_count} updated";
+                if ($created_count > 0) {
+                    $message .= ", {$created_count} created";
+                }
+                $message .= ")";
+            } elseif ($created_count > 0) {
+                $message .= " ({$created_count} created)";
+            }
+            
             echo json_encode([
                 'success' => true, 
-                'message' => "Successfully updated {$updated_count} records",
-                'updated_count' => $updated_count
+                'message' => $message,
+                'updated_count' => $updated_count,
+                'created_count' => $created_count
             ]);
         }
     }

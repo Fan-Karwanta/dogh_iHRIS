@@ -81,6 +81,7 @@ function isPhilippineHoliday($date) {
         '08-25', // National Heroes Day (last Monday of August - approximation)
         '10-28', // Davao Occ Araw
         '10-31', // All Souls' Evening
+        '11-17', // Araw ng Malita
         '11-30', // Bonifacio Day
         '12-25', // Christmas Day
         '12-30', // Rizal Day
