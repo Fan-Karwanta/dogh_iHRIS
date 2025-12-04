@@ -50,3 +50,12 @@ $route['settings/update_department'] = 'settings/update_department';
 $route['settings/delete_department'] = 'settings/delete_department';
 $route['settings/get_department_stats'] = 'settings/get_department_stats';
 $route['settings/get_department_personnel'] = 'settings/get_department_personnel';
+
+// Schedule Compliance Report Routes
+$route['reports/schedule_compliance'] = 'AttendanceCompliance/index';
+$route['reports/schedule_compliance/get_compliance_data'] = 'AttendanceCompliance/get_compliance_data';
+$route['reports/schedule_compliance/get_employee_details'] = 'AttendanceCompliance/get_employee_details';
+$route['reports/schedule_compliance/get_department_summary'] = 'AttendanceCompliance/get_department_summary';
+$route['reports/schedule_compliance/get_overall_stats'] = 'AttendanceCompliance/get_overall_stats';
+$route['reports/schedule_compliance/export_csv'] = 'AttendanceCompliance/export_csv';
+$route['reports/schedule_compliance/print_report'] = 'AttendanceCompliance/print_report';

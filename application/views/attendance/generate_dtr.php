@@ -1146,6 +1146,7 @@ function handleCellClick(e) {
             { value: 'OFFICIAL TIME:full', text: 'OFFICIAL TIME (Full Row)' },
             { value: 'OFF:full', text: 'OFF (Full Row)' },
             { value: 'LEAVE:full', text: 'LEAVE (Full Row)' },
+            { value: 'SPL:full', text: 'SPL (Full Row)' },
             { value: 'SICK LEAVE:full', text: 'SICK LEAVE (Full Row)' },
             { value: 'VACATION LEAVE:full', text: 'VACATION LEAVE (Full Row)' },
             { value: 'TRAINING:full', text: 'TRAINING (Full Row)' },

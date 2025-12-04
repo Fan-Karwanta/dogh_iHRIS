@@ -45,13 +45,13 @@ $current_controller = $this->uri->segment(1);
                         <p>Time Changes</p>
                     </a>
                 </li>
-                <li class="nav-item <?= $current_page == 'generate_dtr' || $current_page == 'generate_bulk_dtr' || $current_page == 'failure_summary' ? 'active' : null ?>">
+                <li class="nav-item <?= $current_page == 'generate_dtr' || $current_page == 'generate_bulk_dtr' || $current_page == 'failure_summary' || $current_page == 'schedule_compliance' ? 'active' : null ?>">
                     <a data-toggle="collapse" href="#dtrMenu">
                         <i class="fas fa-file-alt"></i>
                         <p>Reports</p>
                         <span class="caret"></span>
                     </a>
-                    <div class="collapse <?= $current_page == 'generate_dtr' || $current_page == 'generate_bulk_dtr' || $current_page == 'failure_summary' ? 'show' : null ?>" id="dtrMenu">
+                    <div class="collapse <?= $current_page == 'generate_dtr' || $current_page == 'generate_bulk_dtr' || $current_page == 'failure_summary' || $current_page == 'schedule_compliance' ? 'show' : null ?>" id="dtrMenu">
                         <ul class="nav nav-collapse">
                             <li class="<?= $current_page == 'generate_dtr' ? 'active' : null ?>">
                                 <a href="<?= site_url('attendance/generate_dtr') ?>">
@@ -66,6 +66,11 @@ $current_controller = $this->uri->segment(1);
                             <li class="<?= $current_page == 'failure_summary' ? 'active' : null ?>">
                                 <a href="<?= site_url('biometrics/failure_summary') ?>">
                                     <span class="sub-item">Failure to Clock In/Out</span>
+                                </a>
+                            </li>
+                            <li class="<?= $current_page == 'schedule_compliance' ? 'active' : null ?>">
+                                <a href="<?= site_url('reports/schedule_compliance') ?>">
+                                    <span class="sub-item"><i class="fas fa-trophy text-warning mr-1"></i>Schedule Compliance</span>
                                 </a>
                             </li>
                         </ul>
