@@ -19,6 +19,53 @@ class Personnel extends CI_Controller
         $this->base->load('default', 'personnel/manage', $data);
     }
 
+    public function personnel_profile($id)
+    {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $data['title'] = 'Personnel Profile & Analytics';
+
+        // Get personnel data
+        $personnel = $this->personnelModel->getpersonnel($id);
+        
+        if (!$personnel) {
+            $this->session->set_flashdata('error', 'Personnel not found');
+            redirect('personnel', 'refresh');
+        }
+
+        // Find user account linked to this personnel email
+        $this->db->where('email', $personnel->email);
+        $user = $this->db->get('users')->row();
+
+        if ($user) {
+            // User account exists, redirect to comprehensive user profile
+            redirect('auth/user_profile/' . $user->id, 'refresh');
+        } else {
+            // No user account, show personnel-only view with limited analytics
+            $this->load->model('UserProfileModel', 'profileModel');
+
+            // Get selected month and year from query params
+            $selected_month = $this->input->get('month') ? $this->input->get('month') : date('m');
+            $selected_year = $this->input->get('year') ? $this->input->get('year') : date('Y');
+
+            // Get analytics data based on personnel email
+            $data['monthly_stats'] = $this->profileModel->getMonthlyStats($personnel->email, $selected_month, $selected_year);
+            $data['attendance_trends'] = $this->profileModel->getAttendanceTrends($personnel->email, 6);
+            $data['recent_attendance'] = $this->profileModel->getRecentAttendance($personnel->email, 10);
+            $data['performance'] = $this->profileModel->getPerformanceSummary($personnel->email, $selected_month, $selected_year);
+            $data['audit_trail'] = $this->profileModel->getUserAuditTrail($personnel->email, 15);
+            
+            $data['personnel'] = $personnel;
+            $data['selected_month'] = $selected_month;
+            $data['selected_year'] = $selected_year;
+            $data['has_user_account'] = false;
+
+            $this->base->load('default', 'personnel/personnel_profile', $data);
+        }
+    }
+
     public function personnel_attendance($id)
     {
         if (!$this->ion_auth->logged_in()) {
@@ -281,5 +328,197 @@ class Personnel extends CI_Controller
             $this->session->set_flashdata('message', 'Something went wrong. This borrower cannot be deleted!');
         }
         redirect('personnel', 'refresh');
+    }
+
+    public function upload_profile_image()
+    {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $personnel_id = $this->input->post('personnel_id');
+        
+        if (!$personnel_id) {
+            $this->session->set_flashdata('success', 'danger');
+            $this->session->set_flashdata('message', 'Invalid personnel ID');
+            redirect($_SERVER['HTTP_REFERER'], 'refresh');
+        }
+
+        $config = array(
+            'upload_path' => './assets/uploads/profile_images/',
+            'allowed_types' => 'jpg|jpeg|png|gif',
+            'max_size' => 2048,
+            'max_width' => 2000,
+            'max_height' => 2000,
+            'encrypt_name' => TRUE,
+        );
+
+        $this->load->library('upload', $config);
+
+        if (!$this->upload->do_upload('profile_image')) {
+            $this->session->set_flashdata('success', 'danger');
+            $this->session->set_flashdata('message', $this->upload->display_errors());
+        } else {
+            $upload_data = $this->upload->data();
+            $old_image = $this->personnelModel->get_profile_image($personnel_id);
+            
+            if ($old_image) {
+                $old_file_path = './assets/uploads/profile_images/' . $old_image;
+                if (file_exists($old_file_path)) {
+                    unlink($old_file_path);
+                }
+            }
+
+            $update = $this->personnelModel->update_profile_image($personnel_id, $upload_data['file_name']);
+
+            if ($update || $this->db->affected_rows() >= 0) {
+                $this->session->set_flashdata('success', 'success');
+                $this->session->set_flashdata('message', 'Profile image uploaded successfully!');
+            } else {
+                $this->session->set_flashdata('success', 'danger');
+                $this->session->set_flashdata('message', 'Failed to update profile image');
+            }
+        }
+
+        redirect($_SERVER['HTTP_REFERER'], 'refresh');
+    }
+
+    public function delete_profile_image($personnel_id)
+    {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $delete = $this->personnelModel->delete_profile_image($personnel_id);
+
+        if ($delete) {
+            $this->session->set_flashdata('success', 'success');
+            $this->session->set_flashdata('message', 'Profile image deleted successfully!');
+        } else {
+            $this->session->set_flashdata('success', 'danger');
+            $this->session->set_flashdata('message', 'Failed to delete profile image');
+        }
+
+        redirect($_SERVER['HTTP_REFERER'], 'refresh');
+    }
+
+    /**
+     * Show attendance history for a specific metric
+     */
+    public function attendance_history($id, $metric)
+    {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $data['title'] = 'Attendance History';
+
+        // Get personnel data
+        $personnel = $this->personnelModel->getpersonnel($id);
+        
+        if (!$personnel) {
+            $this->session->set_flashdata('error', 'Personnel not found');
+            redirect('personnel', 'refresh');
+        }
+
+        $this->load->model('UserProfileModel', 'profileModel');
+
+        // Get selected month and year from query params
+        $selected_month = $this->input->get('month') ? $this->input->get('month') : date('m');
+        $selected_year = $this->input->get('year') ? $this->input->get('year') : date('Y');
+
+        $data['personnel'] = $personnel;
+        $data['selected_month'] = $selected_month;
+        $data['selected_year'] = $selected_year;
+        $data['metric'] = $metric;
+
+        // Get history based on metric type
+        switch ($metric) {
+            case 'present_days':
+                $data['history'] = $this->profileModel->getPresentDaysHistory($personnel->email, $selected_month, $selected_year);
+                $data['metric_title'] = 'Present Days';
+                break;
+            case 'absent_days':
+                $data['history'] = $this->profileModel->getAbsentDaysHistory($personnel->email, $selected_month, $selected_year);
+                $data['metric_title'] = 'Absent Days';
+                break;
+            case 'late_arrivals':
+                $data['history'] = $this->profileModel->getLateArrivalsHistory($personnel->email, $selected_month, $selected_year);
+                $data['metric_title'] = 'Late Arrivals';
+                break;
+            case 'early_departures':
+                $data['history'] = $this->profileModel->getEarlyDeparturesHistory($personnel->email, $selected_month, $selected_year);
+                $data['metric_title'] = 'Early Departures';
+                break;
+            case 'complete_dtr':
+                $data['history'] = $this->profileModel->getCompleteDaysHistory($personnel->email, $selected_month, $selected_year);
+                $data['metric_title'] = 'Complete DTR';
+                break;
+            default:
+                $this->session->set_flashdata('error', 'Invalid metric type');
+                redirect('personnel/personnel_profile/' . $id, 'refresh');
+        }
+
+        $this->base->load('default', 'personnel/attendance_history', $data);
+    }
+
+    /**
+     * Show justification page for analytics metrics
+     */
+    public function analytics_justification($id, $metric)
+    {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $data['title'] = 'Analytics Justification';
+
+        // Get personnel data
+        $personnel = $this->personnelModel->getpersonnel($id);
+        
+        if (!$personnel) {
+            $this->session->set_flashdata('error', 'Personnel not found');
+            redirect('personnel', 'refresh');
+        }
+
+        $this->load->model('UserProfileModel', 'profileModel');
+
+        // Get selected month and year from query params
+        $selected_month = $this->input->get('month') ? $this->input->get('month') : date('m');
+        $selected_year = $this->input->get('year') ? $this->input->get('year') : date('Y');
+
+        $data['personnel'] = $personnel;
+        $data['selected_month'] = $selected_month;
+        $data['selected_year'] = $selected_year;
+        $data['metric'] = $metric;
+
+        // Get justification data based on metric type
+        switch ($metric) {
+            case 'total_hours':
+                $data['breakdown'] = $this->profileModel->getTotalHoursBreakdown($personnel->email, $selected_month, $selected_year);
+                $data['metric_title'] = 'Total Hours Worked';
+                break;
+            case 'mode_arrival':
+                $data['breakdown'] = $this->profileModel->getModeArrivalBreakdown($personnel->email, $selected_month, $selected_year);
+                $data['metric_title'] = 'Mode Arrival Time';
+                break;
+            case 'mode_departure':
+                $data['breakdown'] = $this->profileModel->getModeDepartureBreakdown($personnel->email, $selected_month, $selected_year);
+                $data['metric_title'] = 'Mode Departure Time';
+                break;
+            case 'avg_late_arrival':
+                $data['breakdown'] = $this->profileModel->getAvgLateArrivalBreakdown($personnel->email, $selected_month, $selected_year);
+                $data['metric_title'] = 'Average Time of Late Arrivals';
+                break;
+            case 'avg_early_departure':
+                $data['breakdown'] = $this->profileModel->getAvgEarlyDepartureBreakdown($personnel->email, $selected_month, $selected_year);
+                $data['metric_title'] = 'Average Time of Early Departures';
+                break;
+            default:
+                $this->session->set_flashdata('error', 'Invalid metric type');
+                redirect('personnel/personnel_profile/' . $id, 'refresh');
+        }
+
+        $this->base->load('default', 'personnel/analytics_justification', $data);
     }
 }

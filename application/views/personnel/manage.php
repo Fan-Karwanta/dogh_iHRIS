@@ -120,6 +120,7 @@
                         <thead>
                             <tr>
                                 <th>No</th>
+                                <th>Photo</th>
                                 <th>Fullname</th>
                                 <th>Position</th>
                                 <th>Employment Type</th>
@@ -134,6 +135,7 @@
                         <tfoot>
                             <tr>
                                 <th>No</th>
+                                <th>Photo</th>
                                 <th>Full name</th>
                                 <th>Position</th>
                                 <th>Employment Type</th>
@@ -147,10 +149,19 @@
                         </tfoot>
                         <tbody>
                             <?php $no = 1;
-                            foreach ($person as $row) : ?>
+                            foreach ($person as $row) : 
+                                $profile_img = $row->profile_image 
+                                    ? site_url('assets/uploads/profile_images/' . $row->profile_image) 
+                                    : site_url('assets/img/person.png');
+                            ?>
                                 <tr>
                                     <td><?= $no ?></td>
-                                    <td><a href="<?= site_url('admin/personnel_attendace/') . $row->id ?>"><?= htmlspecialchars($row->lastname, ENT_QUOTES, 'UTF-8') . ', ' . htmlspecialchars($row->firstname, ENT_QUOTES, 'UTF-8') . ' ' . htmlspecialchars($row->middlename, ENT_QUOTES, 'UTF-8') ?></a></td>
+                                    <td>
+                                        <div class="avatar avatar-sm">
+                                            <img src="<?= $profile_img ?>" alt="<?= htmlspecialchars($row->firstname, ENT_QUOTES, 'UTF-8') ?>" class="avatar-img rounded-circle" style="object-fit: cover;">
+                                        </div>
+                                    </td>
+                                    <td><a href="<?= site_url('personnel/personnel_profile/') . $row->id ?>" class="font-weight-bold"><?= htmlspecialchars($row->lastname, ENT_QUOTES, 'UTF-8') . ', ' . htmlspecialchars($row->firstname, ENT_QUOTES, 'UTF-8') . ' ' . htmlspecialchars($row->middlename, ENT_QUOTES, 'UTF-8') ?></a></td>
                                     <td><?= htmlspecialchars($row->position, ENT_QUOTES, 'UTF-8'); ?></td>
                                     <td>
                                         <?php 
@@ -166,6 +177,9 @@
                                     <td><?= $row->status == 1 ? '<span class="badge badge-primary">Active</span>' : '<span class="badge badge-danger">Inactive</span>' ?></td>
                                     <td>
                                         <div class="form-button-action">
+                                            <a type="button" href="<?= site_url('personnel/personnel_profile/') . $row->id ?>" class="btn btn-link btn-info mt-1 p-1" title="View Profile & Analytics">
+                                                <i class="fas fa-user-circle"></i>
+                                            </a>
                                             <?php if ($row->fb) : ?>
                                                 <a type="button" href="<?= $row->fb ?>" data-toggle="tooltip" class="btn btn-link btn-primary mt-1 p-1" data-original-title="Facebook URL" target="_blank">
                                                     <i class="fab fa-facebook"></i>
@@ -174,8 +188,11 @@
                                             <a type="button" href="#edit" data-toggle="modal" class="btn btn-link btn-success mt-1 p-1" title="Edit Personnel" data-id="<?= $row->id ?>" onclick="editPersonnel(this)">
                                                 <i class="fa fa-edit"></i>
                                             </a>
-                                            <a type="button" href="<?= site_url('admin/generate_dtr/') . $row->id ?>" class="btn btn-link btn-secondary mt-1 p-1" title="Generate DTR" data-id="<?= $row->id ?>" onclick="editPersonnel(this)">
+                                            <a type="button" href="<?= site_url('admin/generate_dtr/') . $row->id ?>" class="btn btn-link btn-secondary mt-1 p-1" title="Generate DTR">
                                                 <i class="fas fa-file"></i>
+                                            </a>
+                                            <a type="button" href="<?= site_url('admin/personnel_attendace/') . $row->id ?>" class="btn btn-link btn-warning mt-1 p-1" title="View Attendance Records">
+                                                <i class="fas fa-calendar-check"></i>
                                             </a>
                                             <a type="button" href="<?= site_url("personnel/delete/" . $row->id); ?>" data-toggle="tooltip" onclick="return confirm('Are you sure you want to delete this personnel?');" class="btn btn-link btn-danger mt-1 p-1" data-original-title="Remove">
                                                 <i class="fa fa-times"></i>

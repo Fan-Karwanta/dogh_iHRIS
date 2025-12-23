@@ -481,7 +481,7 @@ class Auth extends CI_Controller
 	}
 
 	/**
-	 * Edit a user
+	 * Comprehensive User Profile with DTR Analytics
 	 *
 	 * @param int|string $id
 	 */
@@ -496,6 +496,52 @@ class Auth extends CI_Controller
 		$user = $this->ion_auth->user($id)->row();
 		$groups = $this->ion_auth->groups()->result_array();
 		$currentGroups = $this->ion_auth->get_users_groups($id)->result_array();
+
+		// Load UserProfileModel for comprehensive analytics
+		$this->load->model('UserProfileModel', 'profileModel');
+
+		// Get selected month and year from query params
+		$selected_month = $this->input->get('month') ? $this->input->get('month') : date('m');
+		$selected_year = $this->input->get('year') ? $this->input->get('year') : date('Y');
+
+		// Get comprehensive user profile data
+		$profile_data = $this->profileModel->getUserProfile($id);
+		
+		if ($profile_data && $profile_data->email) {
+			// Get monthly statistics
+			$this->data['monthly_stats'] = $this->profileModel->getMonthlyStats($profile_data->email, $selected_month, $selected_year);
+			
+			// Get yearly statistics
+			$this->data['yearly_stats'] = $this->profileModel->getYearlyStats($profile_data->email, $selected_year);
+			
+			// Get attendance trends (last 6 months)
+			$this->data['attendance_trends'] = $this->profileModel->getAttendanceTrends($profile_data->email, 6);
+			
+			// Get recent attendance records
+			$this->data['recent_attendance'] = $this->profileModel->getRecentAttendance($profile_data->email, 10);
+			
+			// Get department comparison
+			$this->data['dept_comparison'] = $this->profileModel->getDepartmentComparison($profile_data->email, $selected_month, $selected_year);
+			
+			// Get performance summary
+			$this->data['performance'] = $this->profileModel->getPerformanceSummary($profile_data->email, $selected_month, $selected_year);
+			
+			// Get audit trail
+			$this->data['audit_trail'] = $this->profileModel->getUserAuditTrail($profile_data->email, 15);
+		} else {
+			// No personnel record linked
+			$this->data['monthly_stats'] = null;
+			$this->data['yearly_stats'] = null;
+			$this->data['attendance_trends'] = null;
+			$this->data['recent_attendance'] = null;
+			$this->data['dept_comparison'] = null;
+			$this->data['performance'] = null;
+			$this->data['audit_trail'] = null;
+		}
+
+		$this->data['profile_data'] = $profile_data;
+		$this->data['selected_month'] = $selected_month;
+		$this->data['selected_year'] = $selected_year;
 
 		//USAGE NOTE - you can do more complicated queries like this
 		//$groups = $this->ion_auth->where(['field' => 'value'])->groups()->result_array();
@@ -751,6 +797,134 @@ class Auth extends CI_Controller
 			return TRUE;
 		}
 		return FALSE;
+	}
+
+	/**
+	 * Show attendance history for a specific metric (for user profile)
+	 */
+	public function user_attendance_history($id, $metric)
+	{
+		if (!$this->ion_auth->logged_in() || (!$this->ion_auth->is_admin() && !($this->ion_auth->user()->row()->id == $id))) {
+			redirect('auth', 'refresh');
+		}
+
+		$this->data['title'] = 'Attendance History';
+
+		$user = $this->ion_auth->user($id)->row();
+		
+		if (!$user) {
+			$this->session->set_flashdata('error', 'User not found');
+			redirect('auth', 'refresh');
+		}
+
+		$this->load->model('UserProfileModel', 'profileModel');
+
+		// Get selected month and year from query params
+		$selected_month = $this->input->get('month') ? $this->input->get('month') : date('m');
+		$selected_year = $this->input->get('year') ? $this->input->get('year') : date('Y');
+
+		// Get user profile data to get email
+		$profile_data = $this->profileModel->getUserProfile($id);
+
+		if (!$profile_data || !$profile_data->email) {
+			$this->session->set_flashdata('error', 'No personnel record linked to this user');
+			redirect('auth/user_profile/' . $id, 'refresh');
+		}
+
+		$this->data['user'] = $user;
+		$this->data['profile_data'] = $profile_data;
+		$this->data['selected_month'] = $selected_month;
+		$this->data['selected_year'] = $selected_year;
+		$this->data['metric'] = $metric;
+
+		// Get history based on metric type
+		switch ($metric) {
+			case 'present_days':
+				$this->data['history'] = $this->profileModel->getPresentDaysHistory($profile_data->email, $selected_month, $selected_year);
+				$this->data['metric_title'] = 'Present Days';
+				break;
+			case 'absent_days':
+				$this->data['history'] = $this->profileModel->getAbsentDaysHistory($profile_data->email, $selected_month, $selected_year);
+				$this->data['metric_title'] = 'Absent Days';
+				break;
+			case 'late_arrivals':
+				$this->data['history'] = $this->profileModel->getLateArrivalsHistory($profile_data->email, $selected_month, $selected_year);
+				$this->data['metric_title'] = 'Late Arrivals';
+				break;
+			case 'early_departures':
+				$this->data['history'] = $this->profileModel->getEarlyDeparturesHistory($profile_data->email, $selected_month, $selected_year);
+				$this->data['metric_title'] = 'Early Departures';
+				break;
+			case 'complete_dtr':
+				$this->data['history'] = $this->profileModel->getCompleteDaysHistory($profile_data->email, $selected_month, $selected_year);
+				$this->data['metric_title'] = 'Complete DTR';
+				break;
+			default:
+				$this->session->set_flashdata('error', 'Invalid metric type');
+				redirect('auth/user_profile/' . $id, 'refresh');
+		}
+
+		$this->base->load('default', 'user/user_attendance_history', $this->data);
+	}
+
+	/**
+	 * Show justification page for analytics metrics (for user profile)
+	 */
+	public function user_analytics_justification($id, $metric)
+	{
+		if (!$this->ion_auth->logged_in() || (!$this->ion_auth->is_admin() && !($this->ion_auth->user()->row()->id == $id))) {
+			redirect('auth', 'refresh');
+		}
+
+		$this->data['title'] = 'Analytics Justification';
+
+		$user = $this->ion_auth->user($id)->row();
+		
+		if (!$user) {
+			$this->session->set_flashdata('error', 'User not found');
+			redirect('auth', 'refresh');
+		}
+
+		$this->load->model('UserProfileModel', 'profileModel');
+
+		// Get selected month and year from query params
+		$selected_month = $this->input->get('month') ? $this->input->get('month') : date('m');
+		$selected_year = $this->input->get('year') ? $this->input->get('year') : date('Y');
+
+		// Get user profile data to get email
+		$profile_data = $this->profileModel->getUserProfile($id);
+
+		if (!$profile_data || !$profile_data->email) {
+			$this->session->set_flashdata('error', 'No personnel record linked to this user');
+			redirect('auth/user_profile/' . $id, 'refresh');
+		}
+
+		$this->data['user'] = $user;
+		$this->data['profile_data'] = $profile_data;
+		$this->data['selected_month'] = $selected_month;
+		$this->data['selected_year'] = $selected_year;
+		$this->data['metric'] = $metric;
+
+		// Get justification data based on metric type
+		switch ($metric) {
+			case 'total_hours':
+				$this->data['breakdown'] = $this->profileModel->getTotalHoursBreakdown($profile_data->email, $selected_month, $selected_year);
+				$this->data['metric_title'] = 'Total Hours Worked';
+				break;
+			case 'mode_arrival':
+				$this->data['breakdown'] = $this->profileModel->getModeArrivalBreakdown($profile_data->email, $selected_month, $selected_year);
+				$this->data['metric_title'] = 'Mode Arrival Time';
+				break;
+			case 'mode_departure':
+				$this->data['breakdown'] = $this->profileModel->getModeDepartureBreakdown($profile_data->email, $selected_month, $selected_year);
+				$this->data['metric_title'] = 'Mode Departure Time';
+				break;
+			default:
+				$this->session->set_flashdata('error', 'Invalid metric type');
+				redirect('auth/user_profile/' . $id, 'refresh');
+		}
+
+		$this->base->load('default', 'user/user_analytics_justification', $this->data);
 	}
 
 	/**

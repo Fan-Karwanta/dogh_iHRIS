@@ -257,6 +257,9 @@
                 <div class="card-head-row">
                     <div class="card-title"><i class="fas fa-table mr-2"></i>Complete Schedule Compliance Report</div>
                     <div class="card-tools">
+                        <a href="<?= site_url('reports/schedule_compliance/bulk_print_complete?start_date=' . $start_date . '&end_date=' . $end_date . ($department_id ? '&department_id=' . $department_id : '')) ?>" class="btn btn-warning btn-sm mr-2" title="Preview and Bulk Print Complete Schedule Personnel">
+                            <i class="fas fa-users mr-1"></i>Bulk Print Complete
+                        </a>
                         <a href="<?= site_url('reports/schedule_compliance/export_csv?start_date=' . $start_date . '&end_date=' . $end_date . ($department_id ? '&department_id=' . $department_id : '')) ?>" class="btn btn-success btn-sm mr-2">
                             <i class="fas fa-file-excel mr-1"></i>Export CSV
                         </a>

@@ -139,29 +139,41 @@ function isPhilippineHoliday($date) {
     <h4 class="page-title"><?= $title ?></h4>
     <ul class="breadcrumbs">
         <li class="nav-home">
-            <a href="#">
-                <i class="fas fa-users"></i>
+            <a href="<?= site_url('admin/dashboard') ?>">
+                <i class="fas fa-home"></i>
             </a>
         </li>
         <li class="separator">
             <i class="flaticon-right-arrow"></i>
         </li>
         <li class="nav-item">
-            <a href="javascript:void(0)">Personnel</a>
+            <a href="<?= site_url('reports/schedule_compliance') ?>">Schedule Compliance</a>
         </li>
         <li class="separator">
             <i class="flaticon-right-arrow"></i>
         </li>
         <li class="nav-item">
-            <a href="javascript:void(0)">Bulk DTR</a>
+            <a href="<?= site_url('reports/schedule_compliance/bulk_print_complete?start_date=' . $start_date . '&end_date=' . $end_date . ($department_id ? '&department_id=' . $department_id : '')) ?>">Bulk Print Complete</a>
+        </li>
+        <li class="separator">
+            <i class="flaticon-right-arrow"></i>
+        </li>
+        <li class="nav-item">
+            <a href="javascript:void(0)">Bulk DTR Print</a>
         </li>
     </ul>
     <div class="ml-md-auto py-2 py-md-0">
+        <a href="<?= site_url('reports/schedule_compliance/bulk_print_complete?start_date=' . $start_date . '&end_date=' . $end_date . ($department_id ? '&department_id=' . $department_id : '')) ?>" class="btn btn-secondary btn-border btn-round btn-sm mr-2" title="Back">
+            <span class="btn-label">
+                <i class="fa fa-arrow-left"></i>
+            </span>
+            Back
+        </a>
         <a href="javascript:void(0)" class="btn btn-danger btn-border btn-round btn-sm" onclick="printDiv('printThis')" title="Print All DTR">
-            <span class=" btn-label">
+            <span class="btn-label">
                 <i class="fa fa-print"></i>
             </span>
-            Print All
+            Print All (<?= $total_complete ?> DTRs)
         </a>
     </div>
 </div>
@@ -171,10 +183,21 @@ function isPhilippineHoliday($date) {
         <div class="card">
             <div class="card-header">
                 <div class="card-head-row">
-                    <div class="card-title">Bulk Personnel Time Record</div>
-                    <div class="card-tools">
-                        <input type="month" class="form-control" id="month" name="start" min="2021-01" value="<?= isset($_GET['date']) ? $_GET['date'] : date('Y-m') ?>">
+                    <div class="card-title">
+                        <i class="fas fa-check-circle text-success mr-2"></i>
+                        Bulk DTR - Complete Schedule Personnel (<?= $total_complete ?> personnel)
                     </div>
+                    <div class="card-tools">
+                        <span class="badge badge-success mr-2">Period: <?= date('F Y', strtotime($dtr_month . '-01')) ?></span>
+                        <span class="badge badge-info"><?= $department_name ?></span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-success">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    <strong>Complete Schedule Personnel DTRs:</strong> This page shows DTRs for all <?= $total_complete ?> personnel with 100% compliance rate.
+                    Click "Print All" to print all DTRs at once. Each personnel will have 2 copies of their DTR on one page.
                 </div>
             </div>
         </div>
@@ -187,8 +210,22 @@ function isPhilippineHoliday($date) {
     $sys_query = $this->db->query("SELECT * FROM systems WHERE id=1");
     $sys_info = $sys_query->row();
     
+    // Use dtr_month passed from controller
+    $date = $dtr_month;
+    
     $personnel_count = 0;
     $total_personnel = count($person);
+    
+    if (empty($person)): ?>
+        <div class="alert alert-warning text-center no-print" style="margin: 50px;">
+            <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+            <h4>No Complete Schedule Personnel Found</h4>
+            <p>No personnel with 100% compliance rate found for the selected period and department.</p>
+            <a href="<?= site_url('reports/schedule_compliance/bulk_print_complete?start_date=' . $start_date . '&end_date=' . $end_date . ($department_id ? '&department_id=' . $department_id : '')) ?>" class="btn btn-primary mt-3">
+                <i class="fas fa-arrow-left mr-2"></i>Go Back
+            </a>
+        </div>
+    <?php else:
     
     foreach ($person as $row) : 
         $personnel_count++;
@@ -217,43 +254,24 @@ function isPhilippineHoliday($date) {
                 $name_font_size = '9px';
             }
             
-            if (isset($_GET['date'])) {
-                $date = $_GET['date'];
-                $month = date('m', strtotime($date));
-                $year = date('Y', strtotime($date));
-                
-                // Get biometric data using bio_id if available
-                if (!empty($bio_id)) {
-                    $bio_query = $this->db->query("SELECT date, am_in as morning_in, am_out as morning_out, pm_in as afternoon_in, pm_out as afternoon_out, undertime_hours, undertime_minutes 
-                                                  FROM biometrics 
-                                                  WHERE bio_id='$bio_id' AND MONTH(date)=$month AND YEAR(date)=$year 
-                                                  ORDER BY date ASC");
-                    $bio_time = $bio_query->result();
-                } else {
-                    $bio_time = array();
-                }
-                
-                // Get manual attendance data using email
-                $att_query = $this->db->query("SELECT * FROM attendance WHERE email='$email' AND MONTH(date)=$month AND YEAR(date)=$year ORDER BY attendance.date ASC");
-                $att_time = $att_query->result();
-                
+            // Use $date from dtr_month (set at top of file)
+            $month = date('m', strtotime($date));
+            $year = date('Y', strtotime($date));
+            
+            // Get biometric data using bio_id if available
+            if (!empty($bio_id)) {
+                $bio_query = $this->db->query("SELECT date, am_in as morning_in, am_out as morning_out, pm_in as afternoon_in, pm_out as afternoon_out, undertime_hours, undertime_minutes 
+                                              FROM biometrics 
+                                              WHERE bio_id='$bio_id' AND MONTH(date)=$month AND YEAR(date)=$year 
+                                              ORDER BY date ASC");
+                $bio_time = $bio_query->result();
             } else {
-                // Get biometric data using bio_id if available for current month
-                if (!empty($bio_id)) {
-                    $bio_query = $this->db->query("SELECT date, am_in as morning_in, am_out as morning_out, pm_in as afternoon_in, pm_out as afternoon_out, undertime_hours, undertime_minutes 
-                                                  FROM biometrics 
-                                                  WHERE bio_id='$bio_id' AND MONTH(date) = MONTH(CURRENT_DATE()) AND YEAR(date) = YEAR(CURRENT_DATE()) 
-                                                  ORDER BY date ASC");
-                    $bio_time = $bio_query->result();
-                } else {
-                    $bio_time = array();
-                }
-                
-                // Get manual attendance data using email
-                $att_query = $this->db->query("SELECT * FROM attendance WHERE email='$email' AND MONTH(date) = MONTH(CURRENT_DATE())
-                            AND YEAR(date) = YEAR(CURRENT_DATE()) ORDER BY attendance.date ASC");
-                $att_time = $att_query->result();
+                $bio_time = array();
             }
+            
+            // Get manual attendance data using email
+            $att_query = $this->db->query("SELECT * FROM attendance WHERE email='$email' AND MONTH(date)=$month AND YEAR(date)=$year ORDER BY attendance.date ASC");
+            $att_time = $att_query->result();
             
             // Merge biometric and manual attendance data, prioritizing biometric data
             $time = array();
@@ -754,15 +772,18 @@ function isPhilippineHoliday($date) {
             <div class="clearfix" style='clear: both;'></div>
         </div>
         
-    <?php endforeach ?>
+    <?php endforeach; 
+    endif; // End of if (!empty($person)) ?>
 </div>
 
 <script>
-// Month selector functionality
-document.getElementById('month').addEventListener('change', function() {
-    var date = this.value;
-    var currentUrl = window.location.href.split('?')[0];
-    var newUrl = currentUrl;
-    window.location.href = newUrl+'?date='+date;
-});
+// Print function
+function printDiv(divId) {
+    var printContents = document.getElementById(divId).innerHTML;
+    var originalContents = document.body.innerHTML;
+    document.body.innerHTML = printContents;
+    window.print();
+    document.body.innerHTML = originalContents;
+    location.reload();
+}
 </script>

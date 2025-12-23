@@ -110,4 +110,38 @@ class PersonnelModel extends CI_Model
         $this->db->delete('personnels');
         return $this->db->affected_rows();
     }
+
+    public function update_profile_image($personnel_id, $image_filename)
+    {
+        $data = array('profile_image' => $image_filename);
+        $this->db->where('id', $personnel_id);
+        $this->db->update('personnels', $data);
+        return $this->db->affected_rows();
+    }
+
+    public function get_profile_image($personnel_id)
+    {
+        $this->db->select('profile_image');
+        $this->db->where('id', $personnel_id);
+        $query = $this->db->get('personnels');
+        $result = $query->row();
+        return $result ? $result->profile_image : null;
+    }
+
+    public function delete_profile_image($personnel_id)
+    {
+        $image_filename = $this->get_profile_image($personnel_id);
+        
+        if ($image_filename) {
+            $file_path = './assets/uploads/profile_images/' . $image_filename;
+            if (file_exists($file_path)) {
+                unlink($file_path);
+            }
+        }
+        
+        $data = array('profile_image' => null);
+        $this->db->where('id', $personnel_id);
+        $this->db->update('personnels', $data);
+        return $this->db->affected_rows();
+    }
 }

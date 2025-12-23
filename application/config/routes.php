@@ -59,3 +59,9 @@ $route['reports/schedule_compliance/get_department_summary'] = 'AttendanceCompli
 $route['reports/schedule_compliance/get_overall_stats'] = 'AttendanceCompliance/get_overall_stats';
 $route['reports/schedule_compliance/export_csv'] = 'AttendanceCompliance/export_csv';
 $route['reports/schedule_compliance/print_report'] = 'AttendanceCompliance/print_report';
+
+// Bulk Print Complete Schedule Personnel Routes
+$route['reports/schedule_compliance/bulk_print_complete'] = 'AttendanceCompliance/bulk_print_complete';
+$route['reports/schedule_compliance/bulk_print_complete_print'] = 'AttendanceCompliance/bulk_print_complete_print';
+$route['reports/schedule_compliance/get_complete_personnel'] = 'AttendanceCompliance/get_complete_personnel';
+$route['reports/schedule_compliance/bulk_print_dtr'] = 'AttendanceCompliance/bulk_print_dtr';
