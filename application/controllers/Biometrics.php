@@ -1099,48 +1099,11 @@ class Biometrics extends CI_Controller
 
     /**
      * Check if a date is a Philippine holiday
+     * Uses database-driven holidays from HolidayModel
      */
-    private function isPhilippineHoliday($date)
+    private function isPhilippineHoliday($date, $department_id = null)
     {
-        $year = date('Y', strtotime($date));
-        $month_day = date('m-d', strtotime($date));
-        
-        // Fixed Philippine holidays
-        $fixed_holidays = array(
-            '01-01', // New Year's Day
-            '02-25', // EDSA People Power Revolution Anniversary
-            '04-09', // Araw ng Kagitingan (Day of Valor)
-            '05-01', // Labor Day
-            '06-12', // Independence Day
-            '08-21', // Ninoy Aquino Day
-            '08-25', // National Heroes Day (last Monday of August - approximation)
-            '10-28', // Davao Occ Araw
-            '10-31', // All Souls' Evening
-            '11-30', // Bonifacio Day
-            '12-25', // Christmas Day
-            '12-30', // Rizal Day
-            '12-31'  // New Year's Eve
-
-        );
-        
-        // Check fixed holidays
-        if (in_array($month_day, $fixed_holidays)) {
-            return true;
-        }
-        
-        // Variable holidays (simplified - you may need to adjust these)
-        // Maundy Thursday and Good Friday (varies each year)
-        if ($year == 2024 && ($month_day == '04-18' || $month_day == '04-19')) {
-            return true;
-        }
-        if ($year == 2025 && ($month_day == '04-17' || $month_day == '04-18')) {
-            return true;
-        }
-        if ($year == 2026 && ($month_day == '04-02' || $month_day == '04-03')) {
-            return true;
-        }
-        
-        return false;
+        return $this->holidayModel->is_holiday($date, $department_id);
     }
 
     /**

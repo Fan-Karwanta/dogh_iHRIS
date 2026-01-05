@@ -104,13 +104,13 @@ $current_controller = $this->uri->segment(1);
                         </span>
                         <h4 class="text-section">System</h4>
                     </li>
-                    <li class="nav-item <?= $current_page == 'users' || ($current_controller == 'settings' && $current_page == 'departments') ? 'active' : null ?>">
+                    <li class="nav-item <?= $current_page == 'users' || ($current_controller == 'settings' && ($current_page == 'departments' || $current_page == 'holidays')) ? 'active' : null ?>">
                         <a data-toggle="collapse" href="#settings">
                             <i class="fas fa-cogs"></i>
                             <p>Settings</p>
                             <span class="caret"></span>
                         </a>
-                        <div class="collapse <?= $current_page == 'users' || ($current_controller == 'settings' && $current_page == 'departments') ? 'show' : null ?>" id="settings">
+                        <div class="collapse <?= $current_page == 'users' || ($current_controller == 'settings' && ($current_page == 'departments' || $current_page == 'holidays')) ? 'show' : null ?>" id="settings">
                             <ul class="nav nav-collapse">
                                 <li class="<?= $current_page == 'users' ? 'active' : null ?>">
                                     <a href="<?= site_url('admin/users') ?>">
@@ -120,6 +120,11 @@ $current_controller = $this->uri->segment(1);
                                 <li class="<?= ($current_controller == 'settings' && $current_page == 'departments') ? 'active' : null ?>">
                                     <a href="<?= site_url('settings/departments') ?>">
                                         <span class="sub-item">Departments</span>
+                                    </a>
+                                </li>
+                                <li class="<?= ($current_controller == 'settings' && $current_page == 'holidays') ? 'active' : null ?>">
+                                    <a href="<?= site_url('settings/holidays') ?>">
+                                        <span class="sub-item">Holidays</span>
                                     </a>
                                 </li>
                                 <li>

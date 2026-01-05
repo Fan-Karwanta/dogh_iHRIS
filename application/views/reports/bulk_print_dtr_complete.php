@@ -66,54 +66,19 @@ function getWeekendLabel($date) {
     return 'WEEKEND'; // fallback
 }
 
-function isPhilippineHoliday($date) {
-    $year = date('Y', strtotime($date));
-    $month_day = date('m-d', strtotime($date));
-    
-    // Fixed Philippine holidays
-    $fixed_holidays = [
-        '01-01', // New Year's Day
-        '02-25', // EDSA People Power Revolution Anniversary
-        '04-09', // Araw ng Kagitingan (Day of Valor)
-        '05-01', // Labor Day
-        '06-12', // Independence Day
-        '08-21', // Ninoy Aquino Day
-        '08-25', // National Heroes Day (last Monday of August - approximation)
-        '10-28', // Davao Occ Araw
-        '10-31', // All Souls' Evening
-        '11-17', // Araw ng Malita
-        '11-30', // Bonifacio Day
-        '12-25', // Christmas Day
-        '12-30', // Rizal Day
-        '12-31'  // New Year's Eve
-    ];
-    
-    // Check fixed holidays
-    if (in_array($month_day, $fixed_holidays)) {
-        return true;
+// Load holidays from database (done once per view)
+if (!isset($GLOBALS['db_holidays_loaded'])) {
+    $CI =& get_instance();
+    $CI->load->model('HolidayModel', 'holidayModel');
+    $GLOBALS['db_holidays_loaded'] = true;
+    $GLOBALS['holiday_model'] = $CI->holidayModel;
+}
+
+function isPhilippineHoliday($date, $department_id = null) {
+    // Use database holidays
+    if (isset($GLOBALS['holiday_model'])) {
+        return $GLOBALS['holiday_model']->is_holiday($date, $department_id);
     }
-    
-    // Variable holidays (simplified - you may need to adjust these)
-    // Maundy Thursday and Good Friday (varies each year)
-    // For 2024: April 18-19, 2025: April 17-18
-    if ($year == 2024 && ($month_day == '04-18' || $month_day == '04-19')) {
-        return true;
-    }
-    if ($year == 2025 && ($month_day == '04-17' || $month_day == '04-18')) {
-        return true;
-    }
-    if ($year == 2026 && ($month_day == '04-02' || $month_day == '04-03')) {
-        return true;
-    }
-    
-    // Eid al-Fitr (varies each year - approximate dates)
-    if ($year == 2024 && $month_day == '04-10') {
-        return true;
-    }
-    if ($year == 2025 && $month_day == '03-31') {
-        return true;
-    }
-    
     return false;
 }
 ?>

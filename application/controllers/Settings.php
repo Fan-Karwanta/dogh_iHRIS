@@ -436,4 +436,217 @@ class Settings extends CI_Controller
         $stats = $this->departmentModel->get_department_statistics();
         echo json_encode(array('success' => true, 'data' => $stats));
     }
+
+    /**
+     * Holiday Management Page
+     */
+    public function holidays()
+    {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        if (!$this->ion_auth->is_admin()) {
+            $this->session->set_flashdata('success', 'danger');
+            $this->session->set_flashdata('message', 'Access denied. Admin privileges required.');
+            redirect('admin/dashboard', 'refresh');
+        }
+
+        $data['title'] = 'Holiday Management';
+        
+        // Get filter parameters
+        $year = $this->input->get('year') ?: date('Y');
+        $data['selected_year'] = $year;
+        
+        $data['holidays'] = $this->holidayModel->get_all_holidays(array('year' => $year));
+        $data['departments'] = $this->departmentModel->get_all_departments(true);
+        
+        // Get available years for filter
+        $this->db->select('DISTINCT YEAR(date) as year');
+        $this->db->from('holidays');
+        $this->db->order_by('year', 'DESC');
+        $data['available_years'] = $this->db->get()->result();
+
+        $this->base->load('default', 'settings/holidays', $data);
+    }
+
+    /**
+     * Create new holiday (AJAX)
+     */
+    public function create_holiday()
+    {
+        if (!$this->ion_auth->logged_in() || !$this->ion_auth->is_admin()) {
+            echo json_encode(array('success' => false, 'message' => 'Unauthorized'));
+            return;
+        }
+
+        $name = $this->input->post('name');
+        $date = $this->input->post('date');
+        $holiday_type = $this->input->post('holiday_type') ?: 'fixed';
+        $recurring = $this->input->post('recurring') ? 1 : 0;
+        $description = $this->input->post('description');
+        $applies_to_all = $this->input->post('applies_to_all') ? 1 : 0;
+        $department_ids = $this->input->post('department_ids') ?: array();
+
+        if (empty($name) || empty($date)) {
+            echo json_encode(array('success' => false, 'message' => 'Name and date are required'));
+            return;
+        }
+
+        $data = array(
+            'name' => $name,
+            'date' => $date,
+            'holiday_type' => $holiday_type,
+            'recurring' => $recurring,
+            'description' => $description,
+            'applies_to_all' => $applies_to_all,
+            'status' => 1,
+            'created_by' => $this->ion_auth->user()->row()->id
+        );
+
+        $id = $this->holidayModel->create_holiday($data, $department_ids);
+
+        if ($id) {
+            echo json_encode(array('success' => true, 'message' => 'Holiday created successfully', 'id' => $id));
+        } else {
+            echo json_encode(array('success' => false, 'message' => 'Failed to create holiday'));
+        }
+    }
+
+    /**
+     * Update holiday (AJAX)
+     */
+    public function update_holiday()
+    {
+        if (!$this->ion_auth->logged_in() || !$this->ion_auth->is_admin()) {
+            echo json_encode(array('success' => false, 'message' => 'Unauthorized'));
+            return;
+        }
+
+        $id = $this->input->post('id');
+        $name = $this->input->post('name');
+        $date = $this->input->post('date');
+        $holiday_type = $this->input->post('holiday_type') ?: 'fixed';
+        $recurring = $this->input->post('recurring') ? 1 : 0;
+        $description = $this->input->post('description');
+        $applies_to_all = $this->input->post('applies_to_all') ? 1 : 0;
+        $department_ids = $this->input->post('department_ids') ?: array();
+
+        if (empty($id) || empty($name) || empty($date)) {
+            echo json_encode(array('success' => false, 'message' => 'ID, name and date are required'));
+            return;
+        }
+
+        $data = array(
+            'name' => $name,
+            'date' => $date,
+            'holiday_type' => $holiday_type,
+            'recurring' => $recurring,
+            'description' => $description,
+            'applies_to_all' => $applies_to_all
+        );
+
+        $result = $this->holidayModel->update_holiday($id, $data, $department_ids);
+
+        echo json_encode(array('success' => true, 'message' => 'Holiday updated successfully'));
+    }
+
+    /**
+     * Delete holiday (AJAX)
+     */
+    public function delete_holiday()
+    {
+        if (!$this->ion_auth->logged_in() || !$this->ion_auth->is_admin()) {
+            echo json_encode(array('success' => false, 'message' => 'Unauthorized'));
+            return;
+        }
+
+        $id = $this->input->post('id');
+
+        if (empty($id)) {
+            echo json_encode(array('success' => false, 'message' => 'Holiday ID is required'));
+            return;
+        }
+
+        $result = $this->holidayModel->delete_holiday($id);
+
+        if ($result) {
+            echo json_encode(array('success' => true, 'message' => 'Holiday deleted successfully'));
+        } else {
+            echo json_encode(array('success' => false, 'message' => 'Failed to delete holiday'));
+        }
+    }
+
+    /**
+     * Get single holiday (AJAX)
+     */
+    public function get_holiday()
+    {
+        if (!$this->ion_auth->logged_in() || !$this->ion_auth->is_admin()) {
+            echo json_encode(array('success' => false, 'message' => 'Unauthorized'));
+            return;
+        }
+
+        $id = $this->input->post('id');
+
+        if (empty($id)) {
+            echo json_encode(array('success' => false, 'message' => 'Holiday ID is required'));
+            return;
+        }
+
+        $holiday = $this->holidayModel->get_holiday($id);
+
+        if ($holiday) {
+            echo json_encode(array('success' => true, 'data' => $holiday));
+        } else {
+            echo json_encode(array('success' => false, 'message' => 'Holiday not found'));
+        }
+    }
+
+    /**
+     * Toggle holiday status (AJAX)
+     */
+    public function toggle_holiday_status()
+    {
+        if (!$this->ion_auth->logged_in() || !$this->ion_auth->is_admin()) {
+            echo json_encode(array('success' => false, 'message' => 'Unauthorized'));
+            return;
+        }
+
+        $id = $this->input->post('id');
+        $status = $this->input->post('status');
+
+        if (empty($id)) {
+            echo json_encode(array('success' => false, 'message' => 'Holiday ID is required'));
+            return;
+        }
+
+        $this->db->where('id', $id);
+        $this->db->update('holidays', array('status' => $status));
+
+        echo json_encode(array('success' => true, 'message' => 'Holiday status updated'));
+    }
+
+    /**
+     * Duplicate holidays for new year (AJAX)
+     */
+    public function duplicate_holidays_for_year()
+    {
+        if (!$this->ion_auth->logged_in() || !$this->ion_auth->is_admin()) {
+            echo json_encode(array('success' => false, 'message' => 'Unauthorized'));
+            return;
+        }
+
+        $source_year = $this->input->post('source_year');
+        $target_year = $this->input->post('target_year');
+
+        if (empty($source_year) || empty($target_year)) {
+            echo json_encode(array('success' => false, 'message' => 'Source and target years are required'));
+            return;
+        }
+
+        $count = $this->holidayModel->duplicate_for_year($source_year, $target_year);
+
+        echo json_encode(array('success' => true, 'message' => $count . ' holidays duplicated for ' . $target_year));
+    }
 }
