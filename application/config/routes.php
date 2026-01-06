@@ -1,9 +1,40 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
-$route['default_controller'] = 'auth';
+$route['default_controller'] = 'userauth';
 $route['404_override'] = '';
 $route['translate_uri_dashes'] = FALSE;
+
+// User Type Selection and User Portal Routes
+$route['userauth'] = 'userauth/index';
+$route['userauth/login'] = 'userauth/login';
+$route['userauth/register'] = 'userauth/register';
+$route['userauth/logout'] = 'userauth/logout';
+$route['userauth/check_status'] = 'userauth/check_status';
+
+// User Portal Routes
+$route['user/dashboard'] = 'user/dashboard';
+$route['user/dtr'] = 'user/dtr';
+$route['user/profile'] = 'user/profile';
+$route['user/update_profile'] = 'user/update_profile';
+$route['user/change_password'] = 'user/change_password';
+$route['user/notifications'] = 'user/notifications';
+$route['user/mark_notification_read/(:num)'] = 'user/mark_notification_read/$1';
+$route['user/attendance_history'] = 'user/attendance_history';
+
+// User Management Routes (Admin)
+$route['usermanagement'] = 'usermanagement/index';
+$route['usermanagement/pending'] = 'usermanagement/pending';
+$route['usermanagement/approved'] = 'usermanagement/approved';
+$route['usermanagement/blocked'] = 'usermanagement/blocked';
+$route['usermanagement/view/(:num)'] = 'usermanagement/view/$1';
+$route['usermanagement/add'] = 'usermanagement/add';
+$route['usermanagement/edit/(:num)'] = 'usermanagement/edit/$1';
+$route['usermanagement/approve/(:num)'] = 'usermanagement/approve/$1';
+$route['usermanagement/disapprove/(:num)'] = 'usermanagement/disapprove/$1';
+$route['usermanagement/block/(:num)'] = 'usermanagement/block/$1';
+$route['usermanagement/unblock/(:num)'] = 'usermanagement/unblock/$1';
+$route['usermanagement/delete/(:num)'] = 'usermanagement/delete/$1';
 
 $route['admin'] = 'auth/login';
 $route['admin/users'] = 'auth/users';

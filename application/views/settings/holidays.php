@@ -50,62 +50,81 @@
                             </div>
                         </div>
                         <div class="card-body">
+                            <style>
+                                #holidaysTable th, #holidaysTable td { vertical-align: middle; }
+                                #holidaysTable .date-col { width: 100px; white-space: nowrap; }
+                                #holidaysTable .name-col { min-width: 200px; max-width: 280px; }
+                                #holidaysTable .type-col { width: 80px; text-align: center; }
+                                #holidaysTable .recurring-col { width: 80px; text-align: center; }
+                                #holidaysTable .applies-col { width: 130px; text-align: center; }
+                                #holidaysTable .status-col { width: 100px; }
+                                #holidaysTable .actions-col { width: 100px; white-space: nowrap; }
+                                #holidaysTable .description-text { 
+                                    display: block; 
+                                    max-width: 250px; 
+                                    overflow: hidden; 
+                                    text-overflow: ellipsis; 
+                                    white-space: nowrap;
+                                }
+                            </style>
                             <div class="table-responsive">
-                                <table id="holidaysTable" class="display table table-striped table-hover">
+                                <table id="holidaysTable" class="display table table-striped table-hover" style="width:100%">
                                     <thead>
                                         <tr>
-                                            <th>Date</th>
-                                            <th>Holiday Name</th>
-                                            <th>Type</th>
-                                            <th>Recurring</th>
-                                            <th>Applies To</th>
-                                            <th>Status</th>
-                                            <th class="text-center">Actions</th>
+                                            <th class="date-col">Date</th>
+                                            <th class="name-col">Holiday Name</th>
+                                            <th class="type-col">Type</th>
+                                            <th class="recurring-col">Recurring</th>
+                                            <th class="applies-col">Applies To</th>
+                                            <th class="status-col">Status</th>
+                                            <th class="actions-col text-center">Actions</th>
+                                            <th style="display:none;">Sort Date</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php if (!empty($holidays)) : ?>
                                             <?php foreach ($holidays as $holiday) : ?>
                                                 <tr>
-                                                    <td>
-                                                        <strong><?= date('M d, Y', strtotime($holiday->date)) ?></strong>
-                                                        <br>
-                                                        <small class="text-muted"><?= date('l', strtotime($holiday->date)) ?></small>
-                                                    </td>
-                                                    <td>
-                                                        <strong><?= htmlspecialchars($holiday->name) ?></strong>
-                                                        <?php if (!empty($holiday->description)) : ?>
-                                                            <br><small class="text-muted"><?= htmlspecialchars($holiday->description) ?></small>
+                                                    <td class="date-col">
+                                                        <?php if ($holiday->recurring) : ?>
+                                                            <strong><?= date('M d', strtotime($holiday->date)) ?></strong>
+                                                            <br><small class="text-success"><i class="fas fa-sync-alt"></i> Yearly</small>
+                                                        <?php else : ?>
+                                                            <strong><?= date('M d, Y', strtotime($holiday->date)) ?></strong>
                                                         <?php endif; ?>
                                                     </td>
-                                                    <td>
+                                                    <td class="name-col">
+                                                        <strong><?= htmlspecialchars($holiday->name) ?></strong>
+                                                        <?php if (!empty($holiday->description)) : ?>
+                                                            <br><small class="text-muted description-text" title="<?= htmlspecialchars($holiday->description) ?>"><?= htmlspecialchars($holiday->description) ?></small>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td class="type-col text-center">
                                                         <?php if ($holiday->holiday_type == 'fixed') : ?>
                                                             <span class="badge badge-info">Fixed</span>
                                                         <?php else : ?>
                                                             <span class="badge badge-warning">Variable</span>
                                                         <?php endif; ?>
                                                     </td>
-                                                    <td>
+                                                    <td class="recurring-col text-center">
                                                         <?php if ($holiday->recurring) : ?>
-                                                            <span class="badge badge-success"><i class="fas fa-sync-alt mr-1"></i>Yes</span>
+                                                            <span class="badge badge-success">Yes</span>
                                                         <?php else : ?>
                                                             <span class="badge badge-secondary">No</span>
                                                         <?php endif; ?>
                                                     </td>
-                                                    <td>
+                                                    <td class="applies-col text-center">
                                                         <?php if ($holiday->applies_to_all) : ?>
-                                                            <span class="badge badge-primary"><i class="fas fa-users mr-1"></i>All Departments</span>
+                                                            <span class="badge badge-primary">All Depts</span>
                                                         <?php else : ?>
                                                             <?php 
                                                             $dept_ids = !empty($holiday->department_ids) ? explode(',', $holiday->department_ids) : array();
                                                             $dept_count = count($dept_ids);
                                                             ?>
-                                                            <span class="badge badge-warning" data-toggle="tooltip" title="Click to view departments">
-                                                                <i class="fas fa-building mr-1"></i><?= $dept_count ?> Department<?= $dept_count != 1 ? 's' : '' ?>
-                                                            </span>
+                                                            <span class="badge badge-warning"><?= $dept_count ?> Dept<?= $dept_count != 1 ? 's' : '' ?></span>
                                                         <?php endif; ?>
                                                     </td>
-                                                    <td>
+                                                    <td class="status-col">
                                                         <div class="custom-control custom-switch">
                                                             <input type="checkbox" class="custom-control-input status-toggle" 
                                                                    id="status_<?= $holiday->id ?>" 
@@ -116,20 +135,21 @@
                                                             </label>
                                                         </div>
                                                     </td>
-                                                    <td class="text-center">
-                                                        <button class="btn btn-sm btn-primary btn-edit" data-id="<?= $holiday->id ?>" title="Edit">
+                                                    <td class="actions-col text-center">
+                                                        <button class="btn btn-xs btn-primary btn-edit" data-id="<?= $holiday->id ?>" title="Edit">
                                                             <i class="fas fa-edit"></i>
                                                         </button>
-                                                        <button class="btn btn-sm btn-danger btn-delete" data-id="<?= $holiday->id ?>" data-name="<?= htmlspecialchars($holiday->name) ?>" title="Delete">
+                                                        <button class="btn btn-xs btn-danger btn-delete" data-id="<?= $holiday->id ?>" data-name="<?= htmlspecialchars($holiday->name) ?>" title="Delete">
                                                             <i class="fas fa-trash"></i>
                                                         </button>
                                                     </td>
+                                                    <td style="display:none;"><?= date('m-d', strtotime($holiday->date)) ?></td>
                                                 </tr>
                                             <?php endforeach; ?>
                                         <?php else : ?>
                                             <tr>
-                                                <td colspan="7" class="text-center text-muted py-4">
-                                                    <i class="fas fa-calendar-times fa-3x mb-3"></i>
+                                                <td colspan="8" class="text-center text-muted py-4">
+                                                    <i class="fas fa-calendar-times fa-3x mb-3 d-block"></i>
                                                     <p>No holidays found for <?= $selected_year ?>.</p>
                                                     <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addHolidayModal">
                                                         <i class="fas fa-plus mr-1"></i> Add Holiday
@@ -459,19 +479,29 @@
 </div>
 
 <script>
-$(document).ready(function() {
-    // Initialize DataTable
-    if ($.fn.DataTable.isDataTable('#holidaysTable')) {
-        $('#holidaysTable').DataTable().destroy();
+// Wait for jQuery to be available
+(function checkJQuery() {
+    if (typeof jQuery === 'undefined') {
+        setTimeout(checkJQuery, 50);
+        return;
     }
     
-    $('#holidaysTable').DataTable({
-        "pageLength": 25,
-        "order": [[0, "asc"]],
-        "columnDefs": [
-            { "orderable": false, "targets": [6] }
-        ]
-    });
+    jQuery(document).ready(function($) {
+        // Initialize DataTable
+        if ($.fn.DataTable && $.fn.DataTable.isDataTable('#holidaysTable')) {
+            $('#holidaysTable').DataTable().destroy();
+        }
+        
+        if ($.fn.DataTable) {
+            $('#holidaysTable').DataTable({
+                "pageLength": 25,
+                "order": [[7, "asc"]], // Order by hidden sort date column (index 7)
+                "columnDefs": [
+                    { "orderable": false, "targets": [6] }, // Actions column not sortable
+                    { "visible": false, "targets": [7] } // Hide sort date column
+                ]
+            });
+        }
 
     // Toggle department selection visibility for Add form
     $('input[name="applies_to_all"]').change(function() {
@@ -679,17 +709,22 @@ $(document).ready(function() {
 
     // Notification helper function
     function showNotification(type, message) {
-        $.notify({
-            icon: type == 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle',
-            message: message
-        }, {
-            type: type,
-            placement: {
-                from: 'top',
-                align: 'right'
-            },
-            delay: 3000
-        });
+        if ($.notify) {
+            $.notify({
+                icon: type == 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle',
+                message: message
+            }, {
+                type: type,
+                placement: {
+                    from: 'top',
+                    align: 'right'
+                },
+                delay: 3000
+            });
+        } else {
+            alert(message);
+        }
     }
-});
+    }); // End jQuery document ready
+})(); // End checkJQuery
 </script>

@@ -1,15 +1,19 @@
 <?php
 $user = $this->ion_auth->user()->row();
-$query = $this->db->query("SELECT * FROM systems WHERE id=1");
-$sys = $query->row();
+// Use cached system settings
+if (!isset($GLOBALS['_sys_cache'])) {
+    $query = $this->db->query("SELECT * FROM systems WHERE id=1");
+    $GLOBALS['_sys_cache'] = $query->row();
+}
+$sys = $GLOBALS['_sys_cache'];
 ?>
 <div class="main-header">
     <!-- Logo Header -->
     <div class="logo-header" data-background-color="dark2">
 
-        <a href="<?= site_url('admin/dashboard') ?>" class="logo">
-            <img src="<?= $sys->system_logo ? site_url('assets/uploads/') . $sys->system_logo : site_url('assets/img/logo.png') ?>" alt="navbar brand" class="navbar-brand" width="40">
-            <span class="text-light ml-2 fw-bold" style="font-size:20px">
+        <a href="<?= site_url('admin/dashboard') ?>" class="logo d-flex align-items-center">
+            <img src="<?= base_url('assets/img/logo.png') ?>" alt="<?= $sys->system_name ?>" class="navbar-brand" width="40" height="40" style="object-fit: contain;">
+            <span class="text-light ml-2 fw-bold" style="font-size:18px; font-weight: 600;">
                 <?= $sys->system_acronym ?>
             </span>
         </a>

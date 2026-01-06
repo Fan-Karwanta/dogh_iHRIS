@@ -10,6 +10,7 @@ class HolidayModel extends CI_Model
 
     /**
      * Get all holidays with optional filters
+     * For recurring holidays, year filter is ignored (they apply every year)
      */
     public function get_all_holidays($filters = array())
     {
@@ -21,8 +22,12 @@ class HolidayModel extends CI_Model
             $this->db->where('h.status', $filters['status']);
         }
         
+        // For year filter: show recurring holidays always, filter non-recurring by year
         if (isset($filters['year'])) {
-            $this->db->where('YEAR(h.date)', $filters['year']);
+            $this->db->group_start();
+            $this->db->where('h.recurring', 1); // Always show recurring holidays
+            $this->db->or_where('YEAR(h.date)', $filters['year']); // Or non-recurring for specific year
+            $this->db->group_end();
         }
         
         if (isset($filters['month'])) {
@@ -30,7 +35,8 @@ class HolidayModel extends CI_Model
         }
         
         $this->db->group_by('h.id');
-        $this->db->order_by('h.date', 'ASC');
+        $this->db->order_by('MONTH(h.date)', 'ASC');
+        $this->db->order_by('DAY(h.date)', 'ASC');
         
         return $this->db->get()->result();
     }
@@ -67,7 +73,7 @@ class HolidayModel extends CI_Model
         $this->db->where('h.date', $date);
         $this->db->or_group_start();
         $this->db->where('h.recurring', 1);
-        $this->db->where("DATE_FORMAT(h.date, '%m-%d')", $month_day, false);
+        $this->db->where("DATE_FORMAT(h.date, '%m-%d') =", $month_day);
         $this->db->group_end();
         $this->db->group_end();
         

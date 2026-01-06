@@ -9,53 +9,90 @@ class DashboardModel extends CI_Model
         $this->load->database();
     }
 
+    // Cache for dashboard stats to avoid repeated queries
+    private $dashboard_stats_cache = null;
+    
+    private function getDashboardStatsCache()
+    {
+        if ($this->dashboard_stats_cache === null) {
+            $today = date('Y-m-d');
+            $month = date('m');
+            $year = date('Y');
+            
+            // Single query to get all basic stats
+            $query = $this->db->query("
+                SELECT 
+                    (SELECT COUNT(*) FROM personnels WHERE status = 1) as personnel_count,
+                    (SELECT COUNT(*) FROM attendance WHERE date = '$today') as today_attendance,
+                    (SELECT COUNT(*) FROM biometrics WHERE date = '$today') as today_biometrics,
+                    (SELECT COUNT(*) FROM attendance WHERE MONTH(date) = $month AND YEAR(date) = $year) as monthly_attendance,
+                    (SELECT COUNT(*) FROM biometrics WHERE MONTH(date) = $month AND YEAR(date) = $year) as monthly_biometrics
+            ");
+            $this->dashboard_stats_cache = $query->row();
+        }
+        return $this->dashboard_stats_cache;
+    }
+    
     public function personnel()
     {
-        $this->db->where('status', 1);
-        $query = $this->db->get('personnels');
-        return $query->num_rows();
+        return $this->getDashboardStatsCache()->personnel_count;
     }
 
     public function todayAttendance()
     {
-        $this->db->where('date', date('Y-m-d'));
-        $query = $this->db->get('attendance');
-        return $query->num_rows();
+        return $this->getDashboardStatsCache()->today_attendance;
     }
 
     public function todayBiometrics()
     {
-        $this->db->where('date', date('Y-m-d'));
-        $query = $this->db->get('biometrics');
-        return $query->num_rows();
+        return $this->getDashboardStatsCache()->today_biometrics;
     }
 
     public function monthlyAttendance()
     {
-        $this->db->where('MONTH(date)', date('m'));
-        $this->db->where('YEAR(date)', date('Y'));
-        $query = $this->db->get('attendance');
-        return $query->num_rows();
+        return $this->getDashboardStatsCache()->monthly_attendance;
     }
 
     public function monthlyBiometrics()
     {
-        $this->db->where('MONTH(date)', date('m'));
-        $this->db->where('YEAR(date)', date('Y'));
-        $query = $this->db->get('biometrics');
-        return $query->num_rows();
+        return $this->getDashboardStatsCache()->monthly_biometrics;
     }
 
     public function getAttendanceByDay($days = 7)
     {
+        $start_date = date('Y-m-d', strtotime("-" . ($days - 1) . " days"));
+        $end_date = date('Y-m-d');
+        
+        // Single query for attendance counts grouped by date
+        $attendance_query = $this->db->query("
+            SELECT date, COUNT(*) as count 
+            FROM attendance 
+            WHERE date BETWEEN '$start_date' AND '$end_date' 
+            GROUP BY date
+        ");
+        $attendance_counts = [];
+        foreach ($attendance_query->result() as $row) {
+            $attendance_counts[$row->date] = $row->count;
+        }
+        
+        // Single query for biometrics counts grouped by date
+        $biometrics_query = $this->db->query("
+            SELECT date, COUNT(*) as count 
+            FROM biometrics 
+            WHERE date BETWEEN '$start_date' AND '$end_date' 
+            GROUP BY date
+        ");
+        $biometrics_counts = [];
+        foreach ($biometrics_query->result() as $row) {
+            $biometrics_counts[$row->date] = $row->count;
+        }
+        
+        // Build result array
         $data = [];
         for ($i = $days - 1; $i >= 0; $i--) {
             $date = date('Y-m-d', strtotime("-$i days"));
-            $this->db->where('date', $date);
-            $attendance = $this->db->get('attendance')->num_rows();
-            
-            $this->db->where('date', $date);
-            $biometrics = $this->db->get('biometrics')->num_rows();
+            $attendance = isset($attendance_counts[$date]) ? $attendance_counts[$date] : 0;
+            $biometrics = isset($biometrics_counts[$date]) ? $biometrics_counts[$date] : 0;
             
             $data[] = [
                 'date' => date('M j', strtotime($date)),
@@ -69,19 +106,40 @@ class DashboardModel extends CI_Model
 
     public function getMonthlyStats()
     {
+        $start_date = date('Y-m-01', strtotime("-11 months"));
+        $end_date = date('Y-m-t'); // Last day of current month
+        
+        // Single query for attendance counts grouped by month
+        $attendance_query = $this->db->query("
+            SELECT DATE_FORMAT(date, '%Y-%m') as month_key, COUNT(*) as count 
+            FROM attendance 
+            WHERE date BETWEEN '$start_date' AND '$end_date' 
+            GROUP BY DATE_FORMAT(date, '%Y-%m')
+        ");
+        $attendance_counts = [];
+        foreach ($attendance_query->result() as $row) {
+            $attendance_counts[$row->month_key] = $row->count;
+        }
+        
+        // Single query for biometrics counts grouped by month
+        $biometrics_query = $this->db->query("
+            SELECT DATE_FORMAT(date, '%Y-%m') as month_key, COUNT(*) as count 
+            FROM biometrics 
+            WHERE date BETWEEN '$start_date' AND '$end_date' 
+            GROUP BY DATE_FORMAT(date, '%Y-%m')
+        ");
+        $biometrics_counts = [];
+        foreach ($biometrics_query->result() as $row) {
+            $biometrics_counts[$row->month_key] = $row->count;
+        }
+        
+        // Build result array
         $stats = [];
         for ($i = 11; $i >= 0; $i--) {
             $date = date('Y-m-01', strtotime("-$i months"));
-            $month = date('m', strtotime($date));
-            $year = date('Y', strtotime($date));
-            
-            $this->db->where('MONTH(date)', $month);
-            $this->db->where('YEAR(date)', $year);
-            $attendance = $this->db->get('attendance')->num_rows();
-            
-            $this->db->where('MONTH(date)', $month);
-            $this->db->where('YEAR(date)', $year);
-            $biometrics = $this->db->get('biometrics')->num_rows();
+            $month_key = date('Y-m', strtotime($date));
+            $attendance = isset($attendance_counts[$month_key]) ? $attendance_counts[$month_key] : 0;
+            $biometrics = isset($biometrics_counts[$month_key]) ? $biometrics_counts[$month_key] : 0;
             
             $stats[] = [
                 'month' => date('M Y', strtotime($date)),
@@ -109,19 +167,11 @@ class DashboardModel extends CI_Model
 
     public function getAttendanceRate()
     {
-        $total_personnel = $this->personnel();
         $working_days = date('j'); // Current day of month
-        $expected_records = $total_personnel * $working_days;
+        $stats = $this->getDashboardStatsCache();
         
-        $this->db->where('MONTH(date)', date('m'));
-        $this->db->where('YEAR(date)', date('Y'));
-        $actual_records = $this->db->get('attendance')->num_rows();
-        
-        $this->db->where('MONTH(date)', date('m'));
-        $this->db->where('YEAR(date)', date('Y'));
-        $biometric_records = $this->db->get('biometrics')->num_rows();
-        
-        $total_actual = $actual_records + $biometric_records;
+        $expected_records = $stats->personnel_count * $working_days;
+        $total_actual = $stats->monthly_attendance + $stats->monthly_biometrics;
         
         if ($expected_records > 0) {
             return round(($total_actual / $expected_records) * 100, 1);

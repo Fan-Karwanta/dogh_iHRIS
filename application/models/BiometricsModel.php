@@ -274,6 +274,18 @@ class BiometricsModel extends CI_Model
         $query = $this->db->get();
         $records = $query->result();
         
+        // Pre-fetch all holidays for the date range (single query)
+        $this->load->model('HolidayModel', 'holidayModel');
+        $holidays_query = $this->db->query("
+            SELECT date FROM holidays 
+            WHERE date BETWEEN '$dtr_start_date' AND '$dtr_end_date'
+            AND status = 1
+        ");
+        $holidays = [];
+        foreach ($holidays_query->result() as $h) {
+            $holidays[$h->date] = true;
+        }
+        
         // Count missing logs (same logic as failure_summary)
         $missing_logs_count = 0;
         foreach ($records as $record) {
@@ -285,8 +297,8 @@ class BiometricsModel extends CI_Model
                 continue;
             }
             
-            // Check if it's a Philippine holiday
-            if ($this->isPhilippineHoliday($date)) {
+            // Check if it's a holiday (using pre-fetched data)
+            if (isset($holidays[$date])) {
                 continue;
             }
             

@@ -1,6 +1,12 @@
 <?php 
 $current_page = $this->uri->segment(2); 
 $current_controller = $this->uri->segment(1);
+// Use cached system settings
+if (!isset($GLOBALS['_sys_cache'])) {
+    $query = $this->db->query("SELECT * FROM systems WHERE id=1");
+    $GLOBALS['_sys_cache'] = $query->row();
+}
+$sys = $GLOBALS['_sys_cache'];
 ?>
 <!-- Sidebar -->
 <div class="sidebar sidebar-style-2" data-background-color="dark2">
@@ -103,6 +109,21 @@ $current_controller = $this->uri->segment(1);
                             <i class="fa fa-ellipsis-h"></i>
                         </span>
                         <h4 class="text-section">System</h4>
+                    </li>
+                    <li class="nav-item <?= $current_controller == 'usermanagement' ? 'active' : null ?>">
+                        <a href="<?= site_url('usermanagement') ?>">
+                            <i class="fas fa-user-check"></i>
+                            <p>User Management</p>
+                            <?php 
+                            // Cache pending count to avoid repeated queries
+                            if (!isset($GLOBALS['_pending_users_count'])) {
+                                $this->load->model('UserAccountModel', 'userAccountModel');
+                                $GLOBALS['_pending_users_count'] = $this->userAccountModel->get_statistics()->pending;
+                            }
+                            if ($GLOBALS['_pending_users_count'] > 0): ?>
+                                <span class="badge badge-warning"><?= $GLOBALS['_pending_users_count'] ?></span>
+                            <?php endif; ?>
+                        </a>
                     </li>
                     <li class="nav-item <?= $current_page == 'users' || ($current_controller == 'settings' && ($current_page == 'departments' || $current_page == 'holidays')) ? 'active' : null ?>">
                         <a data-toggle="collapse" href="#settings">
