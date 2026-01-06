@@ -245,77 +245,34 @@ class BiometricsModel extends CI_Model
         $dtr_start_date = $dtr_year . '-' . $dtr_month_num . '-01';
         $dtr_end_date = date('Y-m-t', strtotime($dtr_start_date));
         
-        // Get total edits count from audit_trail for biometrics updates
-        $this->db->select('COUNT(*) as total_edits');
-        $this->db->from('audit_trail');
-        $this->db->where('table_name', 'biometrics');
-        $this->db->where('action_type', 'UPDATE');
-        $this->db->where('DATE(created_at) >=', $edit_start_date);
-        $this->db->where('DATE(created_at) <=', $edit_end_date);
-        $edit_query = $this->db->get();
+        // Get total edits count from audit_trail for biometrics updates (optimized)
+        $edit_query = $this->db->query("
+            SELECT COUNT(*) as total_edits 
+            FROM audit_trail 
+            WHERE table_name = 'biometrics' 
+            AND action_type = 'UPDATE'
+            AND created_at >= '$edit_start_date 00:00:00'
+            AND created_at <= '$edit_end_date 23:59:59'
+        ");
         $total_edits = $edit_query->row()->total_edits;
         
-        // Get missing logs count (failures to clock in/out)
-        // Get all biometric records with at least one time entry (not full-day absence)
-        $this->db->select('biometrics.*');
-        $this->db->from('biometrics');
-        $this->db->join('personnels', 'personnels.bio_id = biometrics.bio_id');
-        $this->db->where('biometrics.date >=', $dtr_start_date);
-        $this->db->where('biometrics.date <=', $dtr_end_date);
-        
-        // Only get records where at least one time slot has data (not full-day absence)
-        $this->db->group_start();
-        $this->db->where('biometrics.am_in IS NOT NULL');
-        $this->db->or_where('biometrics.am_out IS NOT NULL');
-        $this->db->or_where('biometrics.pm_in IS NOT NULL');
-        $this->db->or_where('biometrics.pm_out IS NOT NULL');
-        $this->db->group_end();
-        
-        $query = $this->db->get();
-        $records = $query->result();
-        
-        // Pre-fetch all holidays for the date range (single query)
-        $this->load->model('HolidayModel', 'holidayModel');
-        $holidays_query = $this->db->query("
-            SELECT date FROM holidays 
-            WHERE date BETWEEN '$dtr_start_date' AND '$dtr_end_date'
-            AND status = 1
+        // Count missing logs directly in SQL (much faster than PHP loop)
+        // Excludes weekends (DAYOFWEEK: 1=Sunday, 7=Saturday) and holidays
+        $missing_query = $this->db->query("
+            SELECT 
+                SUM(CASE WHEN b.am_in IS NULL OR b.am_in = '' THEN 1 ELSE 0 END) +
+                SUM(CASE WHEN b.am_out IS NULL OR b.am_out = '' THEN 1 ELSE 0 END) +
+                SUM(CASE WHEN b.pm_in IS NULL OR b.pm_in = '' THEN 1 ELSE 0 END) +
+                SUM(CASE WHEN b.pm_out IS NULL OR b.pm_out = '' THEN 1 ELSE 0 END) as missing_count
+            FROM biometrics b
+            INNER JOIN personnels p ON p.bio_id = b.bio_id
+            WHERE b.date >= '$dtr_start_date'
+            AND b.date <= '$dtr_end_date'
+            AND DAYOFWEEK(b.date) NOT IN (1, 7)
+            AND b.date NOT IN (SELECT date FROM holidays WHERE status = 1 AND date BETWEEN '$dtr_start_date' AND '$dtr_end_date')
+            AND (b.am_in IS NOT NULL OR b.am_out IS NOT NULL OR b.pm_in IS NOT NULL OR b.pm_out IS NOT NULL)
         ");
-        $holidays = [];
-        foreach ($holidays_query->result() as $h) {
-            $holidays[$h->date] = true;
-        }
-        
-        // Count missing logs (same logic as failure_summary)
-        $missing_logs_count = 0;
-        foreach ($records as $record) {
-            $date = $record->date;
-            $day_of_week = date('w', strtotime($date));
-            
-            // Skip weekends (Sunday = 0, Saturday = 6)
-            if ($day_of_week == 0 || $day_of_week == 6) {
-                continue;
-            }
-            
-            // Check if it's a holiday (using pre-fetched data)
-            if (isset($holidays[$date])) {
-                continue;
-            }
-            
-            // Count missing entries (each missing field is one incident)
-            if (empty($record->am_in)) {
-                $missing_logs_count++;
-            }
-            if (empty($record->am_out)) {
-                $missing_logs_count++;
-            }
-            if (empty($record->pm_in)) {
-                $missing_logs_count++;
-            }
-            if (empty($record->pm_out)) {
-                $missing_logs_count++;
-            }
-        }
+        $missing_logs_count = (int)$missing_query->row()->missing_count;
         
         return array(
             'total_edits' => (int)$total_edits,

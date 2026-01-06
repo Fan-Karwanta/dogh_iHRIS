@@ -117,8 +117,13 @@ $sys = $GLOBALS['_sys_cache'];
                             <?php 
                             // Cache pending count to avoid repeated queries
                             if (!isset($GLOBALS['_pending_users_count'])) {
-                                $this->load->model('UserAccountModel', 'userAccountModel');
-                                $GLOBALS['_pending_users_count'] = $this->userAccountModel->get_statistics()->pending;
+                                try {
+                                    $this->load->model('UserAccountModel', 'userAccountModel');
+                                    $stats = $this->userAccountModel->get_statistics();
+                                    $GLOBALS['_pending_users_count'] = $stats ? $stats->pending : 0;
+                                } catch (Exception $e) {
+                                    $GLOBALS['_pending_users_count'] = 0;
+                                }
                             }
                             if ($GLOBALS['_pending_users_count'] > 0): ?>
                                 <span class="badge badge-warning"><?= $GLOBALS['_pending_users_count'] ?></span>

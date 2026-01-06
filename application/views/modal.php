@@ -1,6 +1,10 @@
 <?php
-$query = $this->db->query("SELECT * FROM systems WHERE id=1");
-$sys = $query->row();
+// Use cached system settings
+if (!isset($GLOBALS['_sys_cache'])) {
+    $query = $this->db->query("SELECT * FROM systems WHERE id=1");
+    $GLOBALS['_sys_cache'] = $query->row();
+}
+$sys = $GLOBALS['_sys_cache'];
 ?>
 <!-- Modal -->
 <div class="modal fade" id="restore" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">

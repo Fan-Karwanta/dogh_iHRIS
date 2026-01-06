@@ -1,5 +1,9 @@
 <?php
-$user = $this->ion_auth->user()->row();
+// Use cached user data
+if (!isset($GLOBALS['_user_cache'])) {
+    $GLOBALS['_user_cache'] = $this->ion_auth->user()->row();
+}
+$user = $GLOBALS['_user_cache'];
 // Use cached system settings
 if (!isset($GLOBALS['_sys_cache'])) {
     $query = $this->db->query("SELECT * FROM systems WHERE id=1");

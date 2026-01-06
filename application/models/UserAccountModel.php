@@ -383,32 +383,31 @@ class UserAccountModel extends CI_Model
     }
 
     /**
-     * Get statistics for admin dashboard
+     * Get statistics for admin dashboard (optimized - single query)
      */
     public function get_statistics()
     {
-        $stats = new stdClass();
+        // Check if table exists first to prevent errors
+        if (!$this->db->table_exists($this->table)) {
+            $stats = new stdClass();
+            $stats->total = 0;
+            $stats->pending = 0;
+            $stats->approved = 0;
+            $stats->blocked = 0;
+            $stats->disapproved = 0;
+            return $stats;
+        }
         
-        // Total users
-        $stats->total = $this->db->count_all($this->table);
-        
-        // Pending registrations
-        $this->db->where('status', 'pending');
-        $stats->pending = $this->db->count_all_results($this->table);
-        
-        // Approved users
-        $this->db->where('status', 'approved');
-        $stats->approved = $this->db->count_all_results($this->table);
-        
-        // Blocked users
-        $this->db->where('status', 'blocked');
-        $stats->blocked = $this->db->count_all_results($this->table);
-        
-        // Disapproved users
-        $this->db->where('status', 'disapproved');
-        $stats->disapproved = $this->db->count_all_results($this->table);
-        
-        return $stats;
+        $query = $this->db->query("
+            SELECT 
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved,
+                SUM(CASE WHEN status = 'blocked' THEN 1 ELSE 0 END) as blocked,
+                SUM(CASE WHEN status = 'disapproved' THEN 1 ELSE 0 END) as disapproved
+            FROM {$this->table}
+        ");
+        return $query->row();
     }
 
     /**

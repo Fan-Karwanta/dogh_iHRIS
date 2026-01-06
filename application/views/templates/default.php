@@ -1,7 +1,11 @@
 <?php
 $current_page = $this->uri->segment(1);
 $current_page1 = $this->uri->segment(2);
-$user = $this->ion_auth->user()->row();
+// Cache user data to avoid repeated queries
+if (!isset($GLOBALS['_user_cache'])) {
+    $GLOBALS['_user_cache'] = $this->ion_auth->user()->row();
+}
+$user = $GLOBALS['_user_cache'];
 // Use cached system settings to avoid repeated DB queries
 if (!isset($GLOBALS['_sys_cache'])) {
     $query = $this->db->query("SELECT * FROM systems WHERE id=1");

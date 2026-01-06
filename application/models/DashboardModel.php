@@ -16,17 +16,17 @@ class DashboardModel extends CI_Model
     {
         if ($this->dashboard_stats_cache === null) {
             $today = date('Y-m-d');
-            $month = date('m');
-            $year = date('Y');
+            $month_start = date('Y-m-01');
+            $month_end = date('Y-m-t');
             
-            // Single query to get all basic stats
+            // Single query to get all basic stats (using date ranges for index optimization)
             $query = $this->db->query("
                 SELECT 
                     (SELECT COUNT(*) FROM personnels WHERE status = 1) as personnel_count,
                     (SELECT COUNT(*) FROM attendance WHERE date = '$today') as today_attendance,
                     (SELECT COUNT(*) FROM biometrics WHERE date = '$today') as today_biometrics,
-                    (SELECT COUNT(*) FROM attendance WHERE MONTH(date) = $month AND YEAR(date) = $year) as monthly_attendance,
-                    (SELECT COUNT(*) FROM biometrics WHERE MONTH(date) = $month AND YEAR(date) = $year) as monthly_biometrics
+                    (SELECT COUNT(*) FROM attendance WHERE date BETWEEN '$month_start' AND '$month_end') as monthly_attendance,
+                    (SELECT COUNT(*) FROM biometrics WHERE date BETWEEN '$month_start' AND '$month_end') as monthly_biometrics
             ");
             $this->dashboard_stats_cache = $query->row();
         }
@@ -153,15 +153,21 @@ class DashboardModel extends CI_Model
 
     public function getTopAttendees($limit = 5)
     {
-        $this->db->select('p.firstname, p.lastname, COUNT(*) as total_days');
-        $this->db->from('attendance a');
-        $this->db->join('personnels p', 'p.email = a.email');
-        $this->db->where('MONTH(a.date)', date('m'));
-        $this->db->where('YEAR(a.date)', date('Y'));
-        $this->db->group_by('a.email');
-        $this->db->order_by('total_days', 'DESC');
-        $this->db->limit($limit);
-        $query = $this->db->get();
+        $month = date('m');
+        $year = date('Y');
+        $start_date = "$year-$month-01";
+        $end_date = date('Y-m-t');
+        
+        // Optimized query using date range instead of MONTH/YEAR functions
+        $query = $this->db->query("
+            SELECT p.firstname, p.lastname, COUNT(*) as total_days
+            FROM attendance a
+            INNER JOIN personnels p ON p.email = a.email
+            WHERE a.date BETWEEN '$start_date' AND '$end_date'
+            GROUP BY a.email
+            ORDER BY total_days DESC
+            LIMIT $limit
+        ");
         return $query->result();
     }
 
