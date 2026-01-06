@@ -22,6 +22,16 @@ $route['user/notifications'] = 'user/notifications';
 $route['user/mark_notification_read/(:num)'] = 'user/mark_notification_read/$1';
 $route['user/attendance_history'] = 'user/attendance_history';
 
+// User Leave Application Routes
+$route['user/leave_applications'] = 'user/leave_applications';
+$route['user/create_leave'] = 'user/create_leave';
+$route['user/save_leave'] = 'user/save_leave';
+$route['user/view_leave/(:num)'] = 'user/view_leave/$1';
+$route['user/edit_leave/(:num)'] = 'user/edit_leave/$1';
+$route['user/submit_leave/(:num)'] = 'user/submit_leave/$1';
+$route['user/cancel_leave/(:num)'] = 'user/cancel_leave/$1';
+$route['user/print_leave/(:num)'] = 'user/print_leave/$1';
+
 // User Management Routes (Admin)
 $route['usermanagement'] = 'usermanagement/index';
 $route['usermanagement/pending'] = 'usermanagement/pending';

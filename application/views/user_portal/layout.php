@@ -309,6 +309,11 @@ $sys = $GLOBALS['_sys_cache'];
                         <?php endif; ?>
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link <?= $this->uri->segment(2) == 'leave_applications' ? 'active' : '' ?>" href="<?= site_url('user/leave_applications') ?>">
+                        <i class="fas fa-file-signature"></i> My Leave Applications
+                    </a>
+                </li>
             </ul>
         </nav>
         

@@ -340,4 +340,243 @@ class User extends CI_Controller
         $this->data['content'] = $this->load->view('user_portal/attendance_history_content', $this->data, TRUE);
         $this->load->view('user_portal/layout', $this->data);
     }
+
+    /**
+     * My Leave Applications
+     */
+    public function leave_applications()
+    {
+        $this->load->model('LeaveModel', 'leaveModel');
+        
+        $this->data['title'] = 'My Leave Applications';
+        
+        $personnel_id = $this->session->userdata('user_personnel_id');
+        $personnel = $this->personnelModel->getpersonnel($personnel_id);
+        $this->data['personnel'] = $personnel;
+
+        if ($personnel) {
+            $this->data['leaves'] = $this->leaveModel->get_all(array('personnel_id' => $personnel->id));
+            $this->data['leave_credits'] = $this->leaveModel->get_leave_credits($personnel->id);
+        } else {
+            $this->data['leaves'] = array();
+            $this->data['leave_credits'] = array();
+        }
+
+        // Load leave applications content into layout
+        $this->data['content'] = $this->load->view('user_portal/leave_applications_content', $this->data, TRUE);
+        $this->load->view('user_portal/layout', $this->data);
+    }
+
+    /**
+     * Create new leave application
+     */
+    public function create_leave()
+    {
+        $this->load->model('LeaveModel', 'leaveModel');
+        
+        $this->data['title'] = 'New Leave Application';
+        
+        $personnel_id = $this->session->userdata('user_personnel_id');
+        $personnel = $this->personnelModel->getpersonnel($personnel_id);
+        
+        if (!$personnel) {
+            $this->session->set_flashdata('error', 'Personnel record not found. Please contact HR.');
+            redirect('user/leave_applications');
+        }
+        
+        $this->data['personnel'] = $personnel;
+        $this->data['leave_credits'] = $this->leaveModel->get_leave_credits($personnel->id);
+
+        // Load create leave form content into layout
+        $this->data['content'] = $this->load->view('user_portal/leave_form_content', $this->data, TRUE);
+        $this->load->view('user_portal/layout', $this->data);
+    }
+
+    /**
+     * Save leave application
+     */
+    public function save_leave()
+    {
+        $this->load->model('LeaveModel', 'leaveModel');
+        
+        $personnel_id = $this->session->userdata('user_personnel_id');
+        $personnel = $this->personnelModel->getpersonnel($personnel_id);
+        
+        if (!$personnel) {
+            $this->session->set_flashdata('error', 'Personnel record not found.');
+            redirect('user/leave_applications');
+        }
+
+        $leave_id = $this->input->post('leave_id');
+        $submit_type = $this->input->post('submit_type');
+
+        $data = array(
+            'personnel_id' => $personnel->id,
+            'office_department' => $this->input->post('office_department'),
+            'date_of_filing' => date('Y-m-d'),
+            'salary_grade' => $this->input->post('salary_grade'),
+            'leave_type' => $this->input->post('leave_type'),
+            'leave_type_others' => $this->input->post('leave_type_others'),
+            'vacation_special_within_ph' => $this->input->post('vacation_special_within_ph'),
+            'vacation_special_abroad' => $this->input->post('vacation_special_abroad'),
+            'sick_in_hospital' => $this->input->post('sick_in_hospital'),
+            'sick_out_patient' => $this->input->post('sick_out_patient'),
+            'special_women_illness' => $this->input->post('special_women_illness'),
+            'study_completion_masters' => $this->input->post('study_completion_masters') ? 1 : 0,
+            'study_bar_review' => $this->input->post('study_bar_review') ? 1 : 0,
+            'other_purpose_monetization' => $this->input->post('other_purpose_monetization') ? 1 : 0,
+            'other_purpose_terminal_leave' => $this->input->post('other_purpose_terminal_leave') ? 1 : 0,
+            'working_days_applied' => $this->input->post('working_days_applied'),
+            'inclusive_date_from' => $this->input->post('inclusive_date_from'),
+            'inclusive_date_to' => $this->input->post('inclusive_date_to'),
+            'commutation_requested' => $this->input->post('commutation_requested') ? 1 : 0,
+            'status' => ($submit_type == 'submit') ? 'pending' : 'draft'
+        );
+
+        if ($leave_id) {
+            // Update existing
+            $user_id = $this->session->userdata('user_account_id');
+            $this->leaveModel->update($leave_id, $data, $user_id, 'Leave application updated');
+            $this->session->set_flashdata('success', 'Leave application updated successfully.');
+        } else {
+            // Create new
+            $leave_id = $this->leaveModel->create($data);
+            if ($submit_type == 'submit') {
+                $this->session->set_flashdata('success', 'Leave application submitted successfully.');
+            } else {
+                $this->session->set_flashdata('success', 'Leave application saved as draft.');
+            }
+        }
+
+        redirect('user/leave_applications');
+    }
+
+    /**
+     * View leave application
+     */
+    public function view_leave($id)
+    {
+        $this->load->model('LeaveModel', 'leaveModel');
+        
+        $leave = $this->leaveModel->get_with_details($id);
+        $personnel_id = $this->session->userdata('user_personnel_id');
+        
+        if (!$leave || $leave->personnel_id != $personnel_id) {
+            $this->session->set_flashdata('error', 'Leave application not found.');
+            redirect('user/leave_applications');
+        }
+        
+        $this->data['title'] = 'View Leave Application';
+        $this->data['leave'] = $leave;
+        $this->data['logs'] = $this->leaveModel->get_logs($id);
+
+        // Load view leave content into layout
+        $this->data['content'] = $this->load->view('user_portal/leave_view_content', $this->data, TRUE);
+        $this->load->view('user_portal/layout', $this->data);
+    }
+
+    /**
+     * Edit leave application
+     */
+    public function edit_leave($id)
+    {
+        $this->load->model('LeaveModel', 'leaveModel');
+        
+        $leave = $this->leaveModel->get($id);
+        $personnel_id = $this->session->userdata('user_personnel_id');
+        
+        if (!$leave || $leave->personnel_id != $personnel_id) {
+            $this->session->set_flashdata('error', 'Leave application not found.');
+            redirect('user/leave_applications');
+        }
+        
+        if ($leave->status != 'draft') {
+            $this->session->set_flashdata('error', 'Only draft applications can be edited.');
+            redirect('user/leave_applications');
+        }
+        
+        $this->data['title'] = 'Edit Leave Application';
+        $this->data['leave'] = $leave;
+        $this->data['personnel'] = $this->personnelModel->getpersonnel($personnel_id);
+        $this->data['leave_credits'] = $this->leaveModel->get_leave_credits($personnel_id);
+
+        // Load edit leave form content into layout
+        $this->data['content'] = $this->load->view('user_portal/leave_form_content', $this->data, TRUE);
+        $this->load->view('user_portal/layout', $this->data);
+    }
+
+    /**
+     * Submit leave application
+     */
+    public function submit_leave($id)
+    {
+        $this->load->model('LeaveModel', 'leaveModel');
+        
+        $leave = $this->leaveModel->get($id);
+        $personnel_id = $this->session->userdata('user_personnel_id');
+        
+        if (!$leave || $leave->personnel_id != $personnel_id) {
+            $this->session->set_flashdata('error', 'Leave application not found.');
+            redirect('user/leave_applications');
+        }
+        
+        if ($leave->status != 'draft') {
+            $this->session->set_flashdata('error', 'Only draft applications can be submitted.');
+            redirect('user/leave_applications');
+        }
+        
+        $user_id = $this->session->userdata('user_account_id');
+        $this->leaveModel->submit($id, $user_id);
+        $this->session->set_flashdata('success', 'Leave application submitted successfully.');
+        
+        redirect('user/leave_applications');
+    }
+
+    /**
+     * Cancel leave application
+     */
+    public function cancel_leave($id)
+    {
+        $this->load->model('LeaveModel', 'leaveModel');
+        
+        $leave = $this->leaveModel->get($id);
+        $personnel_id = $this->session->userdata('user_personnel_id');
+        
+        if (!$leave || $leave->personnel_id != $personnel_id) {
+            $this->session->set_flashdata('error', 'Leave application not found.');
+            redirect('user/leave_applications');
+        }
+        
+        if (!in_array($leave->status, array('draft', 'pending'))) {
+            $this->session->set_flashdata('error', 'This application cannot be cancelled.');
+            redirect('user/leave_applications');
+        }
+        
+        $user_id = $this->session->userdata('user_account_id');
+        $this->leaveModel->cancel($id, $user_id, 'Cancelled by applicant');
+        $this->session->set_flashdata('success', 'Leave application cancelled.');
+        
+        redirect('user/leave_applications');
+    }
+
+    /**
+     * Print leave application
+     */
+    public function print_leave($id)
+    {
+        $this->load->model('LeaveModel', 'leaveModel');
+        
+        $leave = $this->leaveModel->get_with_details($id);
+        $personnel_id = $this->session->userdata('user_personnel_id');
+        
+        if (!$leave || $leave->personnel_id != $personnel_id) {
+            $this->session->set_flashdata('error', 'Leave application not found.');
+            redirect('user/leave_applications');
+        }
+        
+        $data['title'] = 'Print Leave Application';
+        $data['leave'] = $leave;
+        
+        $this->load->view('leave/print_form', $data);
+    }
 }

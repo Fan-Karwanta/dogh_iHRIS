@@ -1,7 +1,9 @@
-var $window = $(window);
-$window.on("load",function (){
+// Hide preloader - use DOMContentLoaded instead of window.load to avoid waiting for external resources
+$(document).ready(function(){
     $(".preloader").fadeOut(500);
 });
+// Fallback: Force hide preloader after 3 seconds
+setTimeout(function(){ $(".preloader").fadeOut(500); }, 3000);
 $(document).ready(function(){
     var date = $('#month').val() || '2025-07';
 

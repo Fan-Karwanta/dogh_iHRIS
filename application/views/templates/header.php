@@ -61,13 +61,8 @@ $sys = $GLOBALS['_sys_cache'];
 })();
 </script>
 
-<!-- Performance optimization styles -->
+<!-- Preloader styles -->
 <style>
-    /* Prevent FOUT (Flash of Unstyled Text) */
-    html:not(.fonts-loaded) body { opacity: 0.99; }
-    html.fonts-loaded body { opacity: 1; transition: opacity 0.1s ease-in; }
-    
-    /* Smooth loading transition */
     .preloader { transition: opacity 0.3s ease-out; }
     .preloader.fade-out { opacity: 0; pointer-events: none; }
 </style>

@@ -1,9 +1,14 @@
+<?php
+// Get system settings for dynamic logo and branding
+$this->db->where('id', 1);
+$sys = $this->db->get('systems')->row();
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= isset($title) ? $title : 'User Registration' ?> - DTR System</title>
+    <title><?= isset($title) ? $title : 'User Registration' ?> - <?= $sys->system_name ?></title>
     <link rel="stylesheet" href="<?= base_url('assets/css/bootstrap.min.css') ?>">
     <link rel="stylesheet" href="<?= base_url('assets/css/atlantis.min.css') ?>">
     <style>
@@ -157,8 +162,12 @@
     <div class="register-container">
         <div class="register-card">
             <div class="logo-section">
-                <img src="<?= base_url('assets/img/logo.png') ?>" alt="Logo" onerror="this.src='<?= base_url('assets/img/default-logo.png') ?>'">
-                <h3>Employee Registration</h3>
+                <?php if (!empty($sys->system_logo)) : ?>
+                    <img src="<?= base_url('assets/uploads/' . $sys->system_logo) ?>" alt="<?= $sys->system_name ?>">
+                <?php else : ?>
+                    <img src="<?= base_url('assets/img/logo.png') ?>" alt="Logo">
+                <?php endif; ?>
+                <h3>DOGH <?= $sys->system_acronym ?></h3>
                 <p>Create your account to access the DTR system</p>
             </div>
             

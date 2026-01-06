@@ -1,9 +1,14 @@
+<?php
+// Get system settings for dynamic logo and branding
+$this->db->where('id', 1);
+$sys = $this->db->get('systems')->row();
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= isset($title) ? $title : 'Select User Type' ?> - DTR System</title>
+    <title><?= isset($title) ? $title : 'Select User Type' ?> - <?= $sys->system_name ?></title>
     <link rel="stylesheet" href="<?= base_url('assets/css/bootstrap.min.css') ?>">
     <link rel="stylesheet" href="<?= base_url('assets/css/atlantis.min.css') ?>">
     <style>
@@ -131,8 +136,12 @@
     <div class="selection-container">
         <div class="selection-card">
             <div class="logo-section">
-                <img src="<?= base_url('assets/img/logo.png') ?>" alt="Logo" onerror="this.src='<?= base_url('assets/img/default-logo.png') ?>'">
-                <h2>Daily Time Record System</h2>
+                <?php if (!empty($sys->system_logo)) : ?>
+                    <img src="<?= base_url('assets/uploads/' . $sys->system_logo) ?>" alt="<?= $sys->system_name ?>">
+                <?php else : ?>
+                    <img src="<?= base_url('assets/img/logo.png') ?>" alt="Logo">
+                <?php endif; ?>
+                <h2>DOGH <?= $sys->system_acronym ?></h2>
                 <p>Please select your user type to continue</p>
             </div>
             
@@ -164,7 +173,7 @@
             </div>
             
             <div class="footer-text">
-                <p>Powered by Davao Occidental General Hospital</p>
+                <p>&copy; <?= date('Y') ?> Davao Occidental General Hospital - <?= $sys->system_acronym ?></p>
             </div>
         </div>
     </div>

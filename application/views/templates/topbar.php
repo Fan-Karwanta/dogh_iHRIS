@@ -16,10 +16,12 @@ $sys = $GLOBALS['_sys_cache'];
     <div class="logo-header" data-background-color="dark2">
 
         <a href="<?= site_url('admin/dashboard') ?>" class="logo d-flex align-items-center">
-            <img src="<?= base_url('assets/img/logo.png') ?>" alt="<?= $sys->system_name ?>" class="navbar-brand" width="40" height="40" style="object-fit: contain;">
-            <span class="text-light ml-2 fw-bold" style="font-size:18px; font-weight: 600;">
-                <?= $sys->system_acronym ?>
-            </span>
+            <?php if (!empty($sys->system_logo)) : ?>
+                <img src="<?= base_url('assets/uploads/' . $sys->system_logo) ?>" alt="<?= $sys->system_name ?>" class="navbar-brand" height="35">
+            <?php else : ?>
+                <img src="<?= base_url('assets/img/logo.png') ?>" alt="<?= $sys->system_name ?>" class="navbar-brand" height="35">
+            <?php endif; ?>
+            <span class="ml-2 text-white" style="font-size: 18px; font-weight: 600;"><?= $sys->system_acronym ?></span>
         </a>
         <button class="navbar-toggler sidenav-toggler ml-auto" type="button" data-toggle="collapse" data-target="collapse" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon">

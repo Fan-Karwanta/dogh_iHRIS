@@ -245,34 +245,64 @@ class BiometricsModel extends CI_Model
         $dtr_start_date = $dtr_year . '-' . $dtr_month_num . '-01';
         $dtr_end_date = date('Y-m-t', strtotime($dtr_start_date));
         
-        // Get total edits count from audit_trail for biometrics updates (optimized)
-        $edit_query = $this->db->query("
-            SELECT COUNT(*) as total_edits 
-            FROM audit_trail 
-            WHERE table_name = 'biometrics' 
-            AND action_type = 'UPDATE'
-            AND created_at >= '$edit_start_date 00:00:00'
-            AND created_at <= '$edit_end_date 23:59:59'
-        ");
-        $total_edits = $edit_query->row()->total_edits;
+        // Get total edits count from audit_trail for biometrics updates (with table existence check)
+        $total_edits = 0;
+        $audit_table_exists = $this->db->table_exists('audit_trail');
+        if ($audit_table_exists) {
+            $edit_query = $this->db->query("
+                SELECT COUNT(*) as total_edits 
+                FROM audit_trail 
+                WHERE table_name = 'biometrics' 
+                AND action_type = 'UPDATE'
+                AND created_at >= '$edit_start_date 00:00:00'
+                AND created_at <= '$edit_end_date 23:59:59'
+            ");
+            if ($edit_query && $edit_query->row()) {
+                $total_edits = $edit_query->row()->total_edits;
+            }
+        }
         
         // Count missing logs directly in SQL (much faster than PHP loop)
         // Excludes weekends (DAYOFWEEK: 1=Sunday, 7=Saturday) and holidays
-        $missing_query = $this->db->query("
-            SELECT 
-                SUM(CASE WHEN b.am_in IS NULL OR b.am_in = '' THEN 1 ELSE 0 END) +
-                SUM(CASE WHEN b.am_out IS NULL OR b.am_out = '' THEN 1 ELSE 0 END) +
-                SUM(CASE WHEN b.pm_in IS NULL OR b.pm_in = '' THEN 1 ELSE 0 END) +
-                SUM(CASE WHEN b.pm_out IS NULL OR b.pm_out = '' THEN 1 ELSE 0 END) as missing_count
-            FROM biometrics b
-            INNER JOIN personnels p ON p.bio_id = b.bio_id
-            WHERE b.date >= '$dtr_start_date'
-            AND b.date <= '$dtr_end_date'
-            AND DAYOFWEEK(b.date) NOT IN (1, 7)
-            AND b.date NOT IN (SELECT date FROM holidays WHERE status = 1 AND date BETWEEN '$dtr_start_date' AND '$dtr_end_date')
-            AND (b.am_in IS NOT NULL OR b.am_out IS NOT NULL OR b.pm_in IS NOT NULL OR b.pm_out IS NOT NULL)
-        ");
-        $missing_logs_count = (int)$missing_query->row()->missing_count;
+        $missing_logs_count = 0;
+        $holidays_table_exists = $this->db->table_exists('holidays');
+        
+        if ($holidays_table_exists) {
+            // Use holidays table in query
+            $missing_query = $this->db->query("
+                SELECT 
+                    SUM(CASE WHEN b.am_in IS NULL OR b.am_in = '' THEN 1 ELSE 0 END) +
+                    SUM(CASE WHEN b.am_out IS NULL OR b.am_out = '' THEN 1 ELSE 0 END) +
+                    SUM(CASE WHEN b.pm_in IS NULL OR b.pm_in = '' THEN 1 ELSE 0 END) +
+                    SUM(CASE WHEN b.pm_out IS NULL OR b.pm_out = '' THEN 1 ELSE 0 END) as missing_count
+                FROM biometrics b
+                INNER JOIN personnels p ON p.bio_id = b.bio_id
+                WHERE b.date >= '$dtr_start_date'
+                AND b.date <= '$dtr_end_date'
+                AND DAYOFWEEK(b.date) NOT IN (1, 7)
+                AND b.date NOT IN (SELECT date FROM holidays WHERE status = 1 AND date BETWEEN '$dtr_start_date' AND '$dtr_end_date')
+                AND (b.am_in IS NOT NULL OR b.am_out IS NOT NULL OR b.pm_in IS NOT NULL OR b.pm_out IS NOT NULL)
+            ");
+        } else {
+            // Skip holidays check if table doesn't exist
+            $missing_query = $this->db->query("
+                SELECT 
+                    SUM(CASE WHEN b.am_in IS NULL OR b.am_in = '' THEN 1 ELSE 0 END) +
+                    SUM(CASE WHEN b.am_out IS NULL OR b.am_out = '' THEN 1 ELSE 0 END) +
+                    SUM(CASE WHEN b.pm_in IS NULL OR b.pm_in = '' THEN 1 ELSE 0 END) +
+                    SUM(CASE WHEN b.pm_out IS NULL OR b.pm_out = '' THEN 1 ELSE 0 END) as missing_count
+                FROM biometrics b
+                INNER JOIN personnels p ON p.bio_id = b.bio_id
+                WHERE b.date >= '$dtr_start_date'
+                AND b.date <= '$dtr_end_date'
+                AND DAYOFWEEK(b.date) NOT IN (1, 7)
+                AND (b.am_in IS NOT NULL OR b.am_out IS NOT NULL OR b.pm_in IS NOT NULL OR b.pm_out IS NOT NULL)
+            ");
+        }
+        
+        if ($missing_query && $missing_query->row()) {
+            $missing_logs_count = (int)$missing_query->row()->missing_count;
+        }
         
         return array(
             'total_edits' => (int)$total_edits,

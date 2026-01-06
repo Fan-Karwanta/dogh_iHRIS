@@ -262,12 +262,12 @@
 
 <!-- Include modals from index page -->
 <!-- Approve Modal -->
-<div class="modal fade" id="approveModal" tabindex="-1">
-    <div class="modal-dialog">
+<div class="modal fade" id="approveModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="true" data-keyboard="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header bg-success text-white">
                 <h5 class="modal-title">Approve User Registration</h5>
-                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">&times;</button>
             </div>
             <form id="approveForm" method="POST">
                 <div class="modal-body">
@@ -287,8 +287,8 @@
 </div>
 
 <!-- Disapprove Modal -->
-<div class="modal fade" id="disapproveModal" tabindex="-1">
-    <div class="modal-dialog">
+<div class="modal fade" id="disapproveModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="true" data-keyboard="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
                 <h5 class="modal-title">Disapprove User Registration</h5>
@@ -312,8 +312,8 @@
 </div>
 
 <!-- Block Modal -->
-<div class="modal fade" id="blockModal" tabindex="-1">
-    <div class="modal-dialog">
+<div class="modal fade" id="blockModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="true" data-keyboard="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
                 <h5 class="modal-title">Block User Account</h5>
@@ -337,8 +337,8 @@
 </div>
 
 <!-- Unblock Modal -->
-<div class="modal fade" id="unblockModal" tabindex="-1">
-    <div class="modal-dialog">
+<div class="modal fade" id="unblockModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="true" data-keyboard="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header bg-success text-white">
                 <h5 class="modal-title">Unblock User Account</h5>
@@ -362,8 +362,8 @@
 </div>
 
 <!-- Delete Modal -->
-<div class="modal fade" id="deleteModal" tabindex="-1">
-    <div class="modal-dialog">
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="true" data-keyboard="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
                 <h5 class="modal-title">Delete User Account</h5>

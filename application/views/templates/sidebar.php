@@ -103,6 +103,66 @@ $sys = $GLOBALS['_sys_cache'];
                         </ul>
                     </div>
                 </li>
+                
+                <?php if ($this->ion_auth->is_admin()) : ?>
+                
+                <!-- Leave Management (Admin Only) -->
+                <li class="nav-item <?= $current_controller == 'leaves' ? 'active' : null ?>">
+                    <a data-toggle="collapse" href="#leavesMenu">
+                        <i class="fas fa-calendar-minus"></i>
+                        <p>Leave Management</p>
+                        <span class="caret"></span>
+                        <?php 
+                        if (!isset($GLOBALS['_pending_leaves_count'])) {
+                            $GLOBALS['_pending_leaves_count'] = 0;
+                            try {
+                                if ($this->db->table_exists('leave_applications')) {
+                                    $this->db->where_in('status', array('pending', 'certified', 'recommended'));
+                                    $GLOBALS['_pending_leaves_count'] = $this->db->count_all_results('leave_applications');
+                                }
+                            } catch (Exception $e) {
+                                $GLOBALS['_pending_leaves_count'] = 0;
+                            }
+                        }
+                        if ($GLOBALS['_pending_leaves_count'] > 0): ?>
+                            <span class="badge badge-warning"><?= $GLOBALS['_pending_leaves_count'] ?></span>
+                        <?php endif; ?>
+                    </a>
+                    <div class="collapse <?= $current_controller == 'leaves' ? 'show' : null ?>" id="leavesMenu">
+                        <ul class="nav nav-collapse">
+                            <li class="<?= ($current_controller == 'leaves' && empty($current_page)) ? 'active' : null ?>">
+                                <a href="<?= site_url('leaves') ?>">
+                                    <span class="sub-item">Dashboard</span>
+                                </a>
+                            </li>
+                            <li class="<?= $current_page == 'pending' ? 'active' : null ?>">
+                                <a href="<?= site_url('leaves/pending') ?>">
+                                    <span class="sub-item">Pending Applications</span>
+                                    <?php if ($GLOBALS['_pending_leaves_count'] > 0): ?>
+                                        <span class="badge badge-warning"><?= $GLOBALS['_pending_leaves_count'] ?></span>
+                                    <?php endif; ?>
+                                </a>
+                            </li>
+                            <li class="<?= $current_page == 'all' ? 'active' : null ?>">
+                                <a href="<?= site_url('leaves/all') ?>">
+                                    <span class="sub-item">All Applications</span>
+                                </a>
+                            </li>
+                            <li class="<?= $current_page == 'credits' ? 'active' : null ?>">
+                                <a href="<?= site_url('leaves/credits') ?>">
+                                    <span class="sub-item">Leave Credits</span>
+                                </a>
+                            </li>
+                            <li class="<?= $current_page == 'reports' ? 'active' : null ?>">
+                                <a href="<?= site_url('leaves/reports') ?>">
+                                    <span class="sub-item">Reports</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+                <?php endif ?>
+                
                 <?php if ($this->ion_auth->is_admin()) : ?>
                     <li class="nav-section">
                         <span class="sidebar-mini-icon">
@@ -117,10 +177,16 @@ $sys = $GLOBALS['_sys_cache'];
                             <?php 
                             // Cache pending count to avoid repeated queries
                             if (!isset($GLOBALS['_pending_users_count'])) {
+                                $GLOBALS['_pending_users_count'] = 0;
                                 try {
-                                    $this->load->model('UserAccountModel', 'userAccountModel');
-                                    $stats = $this->userAccountModel->get_statistics();
-                                    $GLOBALS['_pending_users_count'] = $stats ? $stats->pending : 0;
+                                    // Check if user_accounts table exists first
+                                    if ($this->db->table_exists('user_accounts')) {
+                                        $this->load->model('UserAccountModel', 'userAccountModel');
+                                        if (isset($this->userAccountModel)) {
+                                            $stats = $this->userAccountModel->get_statistics();
+                                            $GLOBALS['_pending_users_count'] = ($stats && isset($stats->pending)) ? $stats->pending : 0;
+                                        }
+                                    }
                                 } catch (Exception $e) {
                                     $GLOBALS['_pending_users_count'] = 0;
                                 }

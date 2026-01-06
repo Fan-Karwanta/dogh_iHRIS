@@ -61,10 +61,16 @@
             setTimeout(function() { preloader.style.display = 'none'; }, 300);
         }
     }
-    if (document.readyState === 'complete') {
-        hidePreloader();
+    
+    // Hide on DOMContentLoaded (faster than window.load)
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', hidePreloader);
     } else {
-        window.addEventListener('load', hidePreloader);
+        // DOM already loaded
+        hidePreloader();
     }
+    
+    // Fallback: Force hide after 3 seconds no matter what
+    setTimeout(hidePreloader, 3000);
 })();
 </script>

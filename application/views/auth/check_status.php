@@ -1,9 +1,14 @@
+<?php
+// Get system settings for dynamic logo and branding
+$this->db->where('id', 1);
+$sys = $this->db->get('systems')->row();
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= isset($title) ? $title : 'Check Registration Status' ?> - DTR System</title>
+    <title><?= isset($title) ? $title : 'Check Registration Status' ?> - <?= $sys->system_name ?></title>
     <link rel="stylesheet" href="<?= base_url('assets/css/bootstrap.min.css') ?>">
     <link rel="stylesheet" href="<?= base_url('assets/css/atlantis.min.css') ?>">
     <style>
@@ -100,7 +105,12 @@
     <div class="status-container">
         <div class="status-card">
             <div class="logo-section">
-                <h3>Check Registration Status</h3>
+                <?php if (!empty($sys->system_logo)) : ?>
+                    <img src="<?= base_url('assets/uploads/' . $sys->system_logo) ?>" alt="<?= $sys->system_name ?>" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px;">
+                <?php else : ?>
+                    <img src="<?= base_url('assets/img/logo.png') ?>" alt="Logo" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px;">
+                <?php endif; ?>
+                <h3>DOGH <?= $sys->system_acronym ?></h3>
                 <p>Enter your email to check your account status</p>
             </div>
             
