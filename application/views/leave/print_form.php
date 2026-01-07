@@ -27,13 +27,15 @@
         
         .header {
             display: flex;
-            align-items: flex-start;
+            align-items: center;
+            justify-content: center;
             margin-bottom: 10px;
         }
         
         .header-logo {
-            width: 80px;
+            width: 100px;
             text-align: center;
+            padding: 0 10px;
         }
         
         .header-logo img {
@@ -42,14 +44,15 @@
         }
         
         .header-center {
-            flex: 1;
             text-align: center;
+            padding: 0 20px;
         }
         
         .header-right {
-            width: 120px;
+            width: 100px;
             text-align: center;
             font-size: 9px;
+            padding: 0 10px;
         }
         
         .header-right img {
@@ -61,6 +64,7 @@
             font-size: 16px;
             font-weight: bold;
             margin-top: 5px;
+            margin-left: 12rem;
         }
         
         .form-number {
@@ -212,72 +216,89 @@
     </div>
 
     <div class="form-container">
-        <!-- Header -->
+        <!-- Civil Service Form No. 6 - Upper Left Corner -->
+        <div style="text-align: left; padding: 2px 5px;">
+            <span style="font-size: 9px; font-style: italic;">Civil Service Form No. 6</span><br>
+            <span style="font-size: 9px; font-style: italic;">Revised 2020</span>
+        </div>
+        
+        <!-- Header with Logos -->
         <div class="header">
             <div class="header-logo">
                 <img src="<?= base_url('assets/img/doh_logo1.png') ?>" alt="DOH Logo">
             </div>
             <div class="header-center">
-                <p class="form-number">Civil Service Form No. 6<br>Revised 2020</p>
-                <p><strong>Republic of the Philippines</strong></p>
+                <p>Republic of the Philippines</p>
                 <p><strong>Department of Health</strong></p>
                 <p><strong>DAVAO OCCIDENTAL GENERAL HOSPITAL</strong></p>
-                <p class="form-title">APPLICATION FOR LEAVE</p>
             </div>
             <div class="header-right">
                 <img src="<?= base_url('assets/img/dogh_logo.png') ?>" alt="DOGH Logo">
-                <p style="margin-top: 5px;">DATE RECEIVED:<br>
-                    <span class="underline" style="min-width: 80px;"><?= $leave->date_received ? date('m/d/Y', strtotime($leave->date_received)) : '' ?></span>
-                </p>
             </div>
         </div>
+        
+        <!-- Title and Date Received Row -->
+        <table style="width: 100%;">
+            <tr>
+                <td style="width: 65%; text-align: center; padding: 5px 0;">
+                    <p class="form-title">APPLICATION FOR LEAVE</p>
+                </td>
+                <td style="width: 25%; text-align: left; font-size: 10px; vertical-align: middle;">
+                    <span>DATE RECEIVED: <span class="underline" style="min-width: 100px;"><?= $leave->date_received ? date('m/d/Y', strtotime($leave->date_received)) : '' ?></span></span>
+                </td>
+            </tr>
+        </table>
 
-        <!-- Basic Info Section -->
-        <div style="border-top: 1px solid #000; padding: 8px 0;">
-            <table>
-                <tr>
-                    <td width="25%">
-                        <strong>1. OFFICE/DEPARTMENT</strong><br>
-                        <span class="underline" style="width: 90%;"><?= $leave->office_department ?></span>
-                    </td>
-                    <td width="45%">
-                        <strong>2. NAME:</strong>
-                        <table style="width: 100%;">
-                            <tr>
-                                <td style="text-align: center; border-bottom: 1px solid #000; width: 33%;"><?= strtoupper($leave->lastname) ?></td>
-                                <td style="text-align: center; border-bottom: 1px solid #000; width: 33%;"><?= strtoupper($leave->firstname) ?></td>
-                                <td style="text-align: center; border-bottom: 1px solid #000; width: 33%;"><?= strtoupper($leave->middlename ?? '') ?></td>
-                            </tr>
-                            <tr>
-                                <td style="text-align: center; font-size: 9px;">(Last)</td>
-                                <td style="text-align: center; font-size: 9px;">(First)</td>
-                                <td style="text-align: center; font-size: 9px;">(Middle)</td>
-                            </tr>
-                        </table>
-                    </td>
-                    <td width="30%"></td>
-                </tr>
-            </table>
-        </div>
+        <!-- Basic Info Section - Row 1: Office/Department and Name -->
+        <table style="border-top: 1px solid #000;">
+            <tr>
+                <td width="20%" style="padding: 8px; border-right: 1px solid #000; vertical-align: top;">
+                    <span>1. OFFICE/DEPARTMENT</span><br>
+                    <span class="underline" style="width: 90%;"><?= $leave->office_department ?></span>
+                </td>
+                <td width="55%" style="padding: 8px; vertical-align: top;">
+                    <table style="width: 100%;">
+                        <tr>
+                            <td style="width: 15%; vertical-align: top;">
+                                <span>2. NAME:</span>
+                            </td>
+                            <td style="width: 28%; text-align: center;">
+                                <span style="display: block; border-bottom: 1px solid #000;"><?= strtoupper($leave->lastname) ?></span>
+                                <small style="font-size: 9px;">(Last)</small>
+                            </td>
+                            <td style="width: 28%; text-align: center;">
+                                <span style="display: block; border-bottom: 1px solid #000;"><?= strtoupper($leave->firstname) ?></span>
+                                <small style="font-size: 9px;">(First)</small>
+                            </td>
+                            <td style="width: 28%; text-align: center;">
+                                <span style="display: block; border-bottom: 1px solid #000;"><?= strtoupper($leave->middlename ?? '') ?></span>
+                                <small style="font-size: 9px;">(Middle)</small>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+                <td width="25%" style="padding: 8px; border-left: 1px solid #000; vertical-align: top;">
+                </td>
+            </tr>
+        </table>
 
-        <div style="padding: 8px 0;">
-            <table>
-                <tr>
-                    <td width="25%">
-                        <strong>3. DATE OF FILING</strong><br>
-                        <span class="underline" style="width: 90%;"><?= date('F d, Y', strtotime($leave->date_of_filing)) ?></span>
-                    </td>
-                    <td width="40%">
-                        <strong>4. POSITION</strong><br>
-                        <span class="underline" style="width: 90%;"><?= $leave->position ?? '' ?></span>
-                    </td>
-                    <td width="35%">
-                        <strong>5. SALARY</strong><br>
-                        <span class="underline" style="width: 90%;">SG <?= $leave->salary_grade ?></span>
-                    </td>
-                </tr>
-            </table>
-        </div>
+        <!-- Basic Info Section - Row 2: Date of Filing, Position, Salary -->
+        <table style="border-top: 1px solid #000;">
+            <tr>
+                <td width="20%" style="padding: 8px; border-right: 1px solid #000; vertical-align: top;">
+                    <span>3 DATE OF FILING:</span><br>
+                    <span class="underline" style="width: 90%;"><?= date('F d, Y', strtotime($leave->date_of_filing)) ?></span>
+                </td>
+                <td width="40%" style="padding: 8px; border-right: 1px solid #000; vertical-align: top;">
+                    <span>4. POSITION:</span><br>
+                    <span class="underline" style="width: 90%;"><?= $leave->position ?? '' ?></span>
+                </td>
+                <td width="40%" style="padding: 8px; vertical-align: top;">
+                    <span>5. SALARY:</span><br>
+                    <span class="underline" style="width: 90%;">SG <?= $leave->salary_grade ?></span>
+                </td>
+            </tr>
+        </table>
 
         <!-- Section 6: Details of Application -->
         <div class="section-header">6. DETAILS OF APPLICATION</div>
