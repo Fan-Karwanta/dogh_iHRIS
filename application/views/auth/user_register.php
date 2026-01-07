@@ -13,7 +13,11 @@ $sys = $this->db->get('systems')->row();
     <link rel="stylesheet" href="<?= base_url('assets/css/atlantis.min.css') ?>">
     <style>
         body {
-            background: linear-gradient(135deg, #31ce36 0%, #1b8e20 100%);
+            background-image: url('<?= base_url('assets/img/dogh_background.jpg') ?>');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
             min-height: 100vh;
             padding: 40px 0;
         }

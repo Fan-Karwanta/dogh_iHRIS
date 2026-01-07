@@ -45,6 +45,41 @@
 	}
 }
 
+/* ===========================================
+   Admin Login Background
+   =========================================== */
+body.login {
+	background-image: url('../img/dogh_background.jpg') !important;
+	background-size: cover !important;
+	background-position: center !important;
+	background-attachment: fixed !important;
+	background-repeat: no-repeat !important;
+}
+
+/* ===========================================
+   Personnel Profile Cover Photo
+   =========================================== */
+.profile-cover {
+	background-image: url('../img/dogh_background.jpg');
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
+	height: 200px;
+	position: relative;
+}
+
+.profile-cover-overlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.3);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
 @media print {
 	@page {
 		size: "A4";

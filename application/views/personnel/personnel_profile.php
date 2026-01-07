@@ -266,7 +266,7 @@
     <!-- Profile Card -->
     <div class="col-md-3">
         <div class="card card-profile">
-            <div class="card-header" style="background-image: url('<?= site_url() ?>/assets/img/blogpost.jpg')">
+            <div class="card-header" style="background-image: url('<?= site_url() ?>/assets/img/dogh_background.jpg')">
                 <div class="profile-picture">
                     <div class="avatar avatar-xl">
                         <?php 

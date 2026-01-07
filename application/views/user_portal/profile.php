@@ -31,7 +31,33 @@
         .card-custom { background: white; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .card-custom .card-header { background: transparent; border-bottom: 1px solid #eee; padding: 20px 25px; }
         .card-custom .card-body { padding: 25px; }
-        .profile-header { background: linear-gradient(135deg, #31ce36 0%, #1b8e20 100%); padding: 40px; border-radius: 15px; color: white; text-align: center; margin-bottom: 25px; }
+        .profile-header { 
+            background-image: url('<?= base_url('assets/img/dogh_background.jpg') ?>');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            padding: 40px; 
+            border-radius: 15px; 
+            color: white; 
+            text-align: center; 
+            margin-bottom: 25px; 
+            position: relative;
+        }
+        .profile-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+        }
+        .profile-header * {
+            position: relative;
+            z-index: 1;
+        }
         .profile-header .avatar { width: 120px; height: 120px; border-radius: 50%; border: 4px solid white; object-fit: cover; margin-bottom: 15px; }
         .profile-header .avatar-placeholder { width: 120px; height: 120px; border-radius: 50%; border: 4px solid white; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 48px; }
         @media (max-width: 768px) { .user-sidebar { transform: translateX(-100%); } .user-content { margin-left: 0; } }

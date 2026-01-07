@@ -155,13 +155,32 @@
 
 <style>
     .profile-header {
-        background: linear-gradient(135deg, #1a2035 0%, #252d47 100%);
+        background-image: url('<?= base_url('assets/img/dogh_background.jpg') ?>');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+        background-repeat: no-repeat;
         padding: 40px;
         border-radius: 16px;
         color: white;
         text-align: center;
         margin-bottom: 24px;
         box-shadow: 0 8px 25px rgba(26, 32, 53, 0.3);
+        position: relative;
+    }
+    .profile-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.4);
+        border-radius: 16px;
+    }
+    .profile-header * {
+        position: relative;
+        z-index: 1;
     }
     .profile-header .avatar {
         width: 110px;
