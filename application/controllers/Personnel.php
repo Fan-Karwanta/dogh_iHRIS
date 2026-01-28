@@ -198,6 +198,10 @@ class Personnel extends CI_Controller
             $importRes = array();
             $duplicates = array();
             $errors = array();
+            
+            // Track IDs within the CSV to detect duplicates in the file itself
+            $csv_emails = array();
+            $csv_bio_ids = array();
 
             if ($data) {
                 // Initialize $importData_arr Array
@@ -215,17 +219,42 @@ class Personnel extends CI_Controller
                         $email = trim($filedata[9]); // Email Address is now at index 9
                         $bio_id = trim($filedata[1]); // Biometrics ID
                         
-                        // Check for duplicate email
+                        $is_duplicate = false;
+                        
+                        // Check for duplicate email in database
                         $checkEmail = $this->personnelModel->checkPersonnel($email);
-                        
-                        // Check for duplicate bio_id
-                        $checkBioId = $this->personnelModel->get_personnel_by_bio_id($bio_id);
-                        
                         if ($checkEmail == 1) {
-                            $duplicates[] = "Row $i: Duplicate email address - $email";
-                        } elseif ($checkBioId) {
-                            $duplicates[] = "Row $i: Duplicate biometrics ID - $bio_id";
-                        } else {
+                            $duplicates[] = "Row $i: Duplicate email in database - $email (skipped)";
+                            $is_duplicate = true;
+                        }
+                        
+                        // Check for duplicate bio_id in database
+                        if (!$is_duplicate) {
+                            $checkBioId = $this->personnelModel->get_personnel_by_bio_id($bio_id);
+                            if ($checkBioId) {
+                                $duplicates[] = "Row $i: Duplicate biometrics ID in database - $bio_id (skipped)";
+                                $is_duplicate = true;
+                            }
+                        }
+                        
+                        // Check for duplicate email within the CSV file
+                        if (!$is_duplicate && in_array(strtolower($email), $csv_emails)) {
+                            $duplicates[] = "Row $i: Duplicate email in CSV file - $email (skipped)";
+                            $is_duplicate = true;
+                        }
+                        
+                        // Check for duplicate bio_id within the CSV file
+                        if (!$is_duplicate && in_array($bio_id, $csv_bio_ids)) {
+                            $duplicates[] = "Row $i: Duplicate biometrics ID in CSV file - $bio_id (skipped)";
+                            $is_duplicate = true;
+                        }
+                        
+                        // If not a duplicate, add to import list and track the IDs
+                        if (!$is_duplicate) {
+                            // Track this record's IDs to detect duplicates within CSV
+                            $csv_emails[] = strtolower($email);
+                            $csv_bio_ids[] = $bio_id;
+                            
                             // Parse timestamp
                             $timestamp = !empty($filedata[0]) ? date('Y-m-d H:i:s', strtotime($filedata[0])) : null;
                             
@@ -257,19 +286,6 @@ class Personnel extends CI_Controller
 
                 fclose($data);
 
-                // Report duplicates and errors
-                if (!empty($duplicates) || !empty($errors)) {
-                    $message = '';
-                    if (!empty($errors)) {
-                        $message .= "Errors found:\n" . implode("\n", $errors) . "\n\n";
-                    }
-                    if (!empty($duplicates)) {
-                        $message .= "Duplicates found:\n" . implode("\n", $duplicates);
-                    }
-                    $this->session->set_flashdata('message', $message);
-                    redirect($_SERVER['HTTP_REFERER'], 'refresh');
-                }
-
                 // Insert data using batch insert for better performance
                 if (!empty($importRes)) {
                     $personnel_data = array();
@@ -292,10 +308,27 @@ class Personnel extends CI_Controller
                     
                     $count = $this->personnelModel->create_personnel_batch($personnel_data);
                     
+                    // Build success message with duplicate info if any
+                    $message = "Successfully imported $count personnel records!";
+                    if (!empty($duplicates)) {
+                        $message .= "\n\nSkipped " . count($duplicates) . " duplicate(s):\n" . implode("\n", $duplicates);
+                    }
+                    if (!empty($errors)) {
+                        $message .= "\n\nErrors:\n" . implode("\n", $errors);
+                    }
+                    
                     $this->session->set_flashdata('success', 'success');
-                    $this->session->set_flashdata('message', "Successfully imported $count personnel records!");
+                    $this->session->set_flashdata('message', $message);
                 } else {
-                    $this->session->set_flashdata('message', 'No valid records found to import.');
+                    // No valid records - show why
+                    $message = 'No valid records found to import.';
+                    if (!empty($duplicates)) {
+                        $message .= "\n\nAll records were duplicates:\n" . implode("\n", $duplicates);
+                    }
+                    if (!empty($errors)) {
+                        $message .= "\n\nErrors:\n" . implode("\n", $errors);
+                    }
+                    $this->session->set_flashdata('message', $message);
                 }
             } else {
                 $this->session->set_flashdata('message', 'Unable to open the file! Please contact support');
