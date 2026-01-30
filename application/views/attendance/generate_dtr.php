@@ -1509,8 +1509,17 @@ function saveChanges() {
     });
 }
 
-// Month change handler
+// Month change handler - preserve personnel ID when changing month
 document.getElementById('month').addEventListener('change', function() {
-    window.location.href = '<?= site_url('admin/generate_dtr') ?>?date=' + this.value;
+    <?php 
+    // Get the personnel ID from the first person in the array
+    $personnel_id = isset($person[0]->id) ? $person[0]->id : '';
+    ?>
+    var personnelId = '<?= $personnel_id ?>';
+    if (personnelId) {
+        window.location.href = '<?= site_url('admin/generate_dtr') ?>/' + personnelId + '?date=' + this.value;
+    } else {
+        window.location.href = '<?= site_url('admin/generate_dtr') ?>?date=' + this.value;
+    }
 });
 </script>

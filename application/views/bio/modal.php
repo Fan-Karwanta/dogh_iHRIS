@@ -133,8 +133,12 @@
                 </button>
             </div>
             <div class="modal-body">
+                <div class="alert alert-warning mb-3">
+                    <i class="fas fa-building mr-1"></i> <strong>For Main Department:</strong> 
+                    Use the <a href="<?= site_url('mainbiometrics') ?>" class="alert-link">Main Department Biometrics</a> page for importing CSV files from Main department's biometric hardware.
+                </div>
                 <div class="alert alert-info">
-                    <strong>CSV Format Requirements:</strong>
+                    <strong>CSV Format Requirements (Dialysis/Admin Dept):</strong>
                     <ul class="mb-0 mt-2">
                         <li>Column 1: Employee No.</li>
                         <li>Column 2: Name</li>

@@ -208,7 +208,7 @@ class Personnel extends CI_Controller
                 while (($filedata = fgetcsv($data, 1000, ",")) !== FALSE) {
                     // Skip first row & check number of fields
                     if ($i > 0) {
-                        // New CSV structure: Timestamp,Biometrics ID,Employee ID,Last Name,First Name,Middle Name,Type of Employment,Position,Salary Grade,Email Address,Type of Schedule
+                        // CSV structure: Timestamp,Biometrics ID,Employee ID,Last Name,First Name,Middle Name,Type of Employment,Position,Salary Grade,Email Address,Type of Schedule,Biometrics ID 2,Column 12
                         
                         if (count($filedata) < 11) {
                             $errors[] = "Row $i: Insufficient columns. Expected 11, got " . count($filedata);
@@ -216,14 +216,45 @@ class Personnel extends CI_Controller
                             continue;
                         }
 
-                        $email = trim($filedata[9]); // Email Address is now at index 9
-                        $bio_id = trim($filedata[1]); // Biometrics ID
+                        $email = trim($filedata[9]); // Email Address is at index 9
+                        
+                        // Smart bio_id detection: use column 1 if not empty, otherwise use column 2 (Employee ID)
+                        $bio_id = trim($filedata[1]); // Biometrics ID column
+                        if (empty($bio_id)) {
+                            $bio_id = trim($filedata[2]); // Fallback to Employee ID column
+                        }
+                        
+                        // Clean bio_id - remove leading zeros for consistency but keep as string
+                        $bio_id = ltrim($bio_id, '0');
+                        if (empty($bio_id)) {
+                            $bio_id = '0'; // If it was all zeros, keep one zero
+                        }
+                        
+                        // Skip empty rows (no email and no bio_id)
+                        if (empty($email) && empty($bio_id)) {
+                            $i++;
+                            continue;
+                        }
+                        
+                        // Skip rows with invalid bio_id (non-numeric after cleaning)
+                        if (!is_numeric($bio_id)) {
+                            $errors[] = "Row $i: Invalid biometrics ID '$bio_id' (skipped)";
+                            $i++;
+                            continue;
+                        }
+                        
+                        // Skip rows without valid email
+                        if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                            $errors[] = "Row $i: Invalid or missing email '$email' (skipped)";
+                            $i++;
+                            continue;
+                        }
                         
                         $is_duplicate = false;
                         
                         // Check for duplicate email in database
                         $checkEmail = $this->personnelModel->checkPersonnel($email);
-                        if ($checkEmail == 1) {
+                        if ($checkEmail >= 1) {
                             $duplicates[] = "Row $i: Duplicate email in database - $email (skipped)";
                             $is_duplicate = true;
                         }
@@ -264,8 +295,12 @@ class Personnel extends CI_Controller
                                 $employment_type = 'Regular'; // Default value
                             }
                             
-                            // Parse salary grade
-                            $salary_grade = is_numeric($filedata[8]) ? intval($filedata[8]) : null;
+                            // Parse salary grade - extract numeric value from various formats (SG11, SG 23, grade 1, etc.)
+                            $salary_grade_raw = trim($filedata[8]);
+                            $salary_grade = null;
+                            if (preg_match('/(\d+)/', $salary_grade_raw, $matches)) {
+                                $salary_grade = intval($matches[1]);
+                            }
                             
                             $importRes[$i] = array(
                                 'timestamp' => $timestamp,

@@ -39,11 +39,26 @@ $sys = $GLOBALS['_sys_cache'];
                     </a>
                 </li>
                 -->
-                <li class="nav-item <?= $current_page == 'biometrics' || $current_page == 'generate_biometrics' ? 'active' : null ?>">
-                    <a href="<?= site_url('admin/biometrics') ?>">
+                <li class="nav-item <?= $current_page == 'biometrics' || $current_page == 'generate_biometrics' || $current_controller == 'mainbiometrics' ? 'active' : null ?>">
+                    <a data-toggle="collapse" href="#biometricsMenu">
                         <i class="fas fa-fingerprint"></i>
                         <p>Biometrics</p>
+                        <span class="caret"></span>
                     </a>
+                    <div class="collapse <?= $current_page == 'biometrics' || $current_page == 'generate_biometrics' || $current_controller == 'mainbiometrics' ? 'show' : null ?>" id="biometricsMenu">
+                        <ul class="nav nav-collapse">
+                            <li class="<?= $current_page == 'biometrics' ? 'active' : null ?>">
+                                <a href="<?= site_url('admin/biometrics') ?>">
+                                    <span class="sub-item">Dialysis/Admin Dept</span>
+                                </a>
+                            </li>
+                            <li class="<?= $current_controller == 'mainbiometrics' ? 'active' : null ?>">
+                                <a href="<?= site_url('mainbiometrics') ?>">
+                                    <span class="sub-item">Main Department</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </li>
                 <li class="nav-item <?= $current_page == 'timechanges' || $current_page == 'personnel_biometrics' ? 'active' : null ?>">
                     <a href="<?= site_url('admin/timechanges') ?>">
