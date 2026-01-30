@@ -211,6 +211,12 @@ $sys = $GLOBALS['_sys_cache'];
                             <?php endif; ?>
                         </a>
                     </li>
+                    <li class="nav-item <?= $current_controller == 'hierarchyapproval' ? 'active' : null ?>">
+                        <a href="<?= site_url('hierarchyapproval') ?>">
+                            <i class="fas fa-sitemap"></i>
+                            <p>Hierarchy Approval</p>
+                        </a>
+                    </li>
                     <li class="nav-item <?= $current_page == 'users' || ($current_controller == 'settings' && ($current_page == 'departments' || $current_page == 'holidays')) ? 'active' : null ?>">
                         <a data-toggle="collapse" href="#settings">
                             <i class="fas fa-cogs"></i>
