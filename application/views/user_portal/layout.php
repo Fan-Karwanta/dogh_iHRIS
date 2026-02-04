@@ -18,8 +18,13 @@ $sys = $GLOBALS['_sys_cache'];
     <link rel="dns-prefetch" href="//fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     
-    <!-- Favicon -->
+    <!-- Favicon - Use system logo from settings -->
+    <?php if (!empty($sys->system_logo)): ?>
+    <link rel="shortcut icon" href="<?= base_url('assets/uploads/' . $sys->system_logo) ?>">
+    <link rel="icon" type="image/png" href="<?= base_url('assets/uploads/' . $sys->system_logo) ?>">
+    <?php else: ?>
     <link rel="shortcut icon" href="<?= base_url() ?>favicon_folder/favicon.ico">
+    <?php endif; ?>
     
     <!-- Critical CSS -->
     <link rel="stylesheet" href="<?= base_url('assets/css/bootstrap.min.css') ?>">
@@ -312,6 +317,16 @@ $sys = $GLOBALS['_sys_cache'];
                 <li class="nav-item">
                     <a class="nav-link <?= $this->uri->segment(2) == 'leave_applications' ? 'active' : '' ?>" href="<?= site_url('user/leave_applications') ?>">
                         <i class="fas fa-file-signature"></i> My Leave Applications
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?= $this->uri->segment(1) == 'personneldtredit' ? 'active' : '' ?>" href="<?= site_url('personneldtredit') ?>">
+                        <i class="fas fa-edit"></i> Edit My DTR
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?= $this->uri->segment(1) == 'dtrapproval' ? 'active' : '' ?>" href="<?= site_url('dtrapproval') ?>">
+                        <i class="fas fa-check-double"></i> DTR Approvals
                     </a>
                 </li>
             </ul>

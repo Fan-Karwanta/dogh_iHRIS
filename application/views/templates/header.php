@@ -18,12 +18,18 @@ $sys = $GLOBALS['_sys_cache'];
 <!-- Preconnect for critical resources -->
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-<!-- Favicon -->
+<!-- Favicon - Use system logo from settings -->
+<?php if (!empty($sys->system_logo)): ?>
+<link rel="apple-touch-icon" sizes="180x180" href="<?= base_url('assets/uploads/' . $sys->system_logo) ?>">
+<link rel="icon" type="image/png" sizes="32x32" href="<?= base_url('assets/uploads/' . $sys->system_logo) ?>">
+<link rel="icon" type="image/png" sizes="16x16" href="<?= base_url('assets/uploads/' . $sys->system_logo) ?>">
+<link rel="shortcut icon" href="<?= base_url('assets/uploads/' . $sys->system_logo) ?>">
+<?php else: ?>
 <link rel="apple-touch-icon" sizes="180x180" href="<?= site_url() ?>favicon_folder/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="<?= site_url() ?>favicon_folder/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="<?= site_url() ?>favicon_folder/favicon-16x16.png">
-<link rel="manifest" href="<?= site_url() ?>favicon_folder/site.webmanifest">
 <link rel="shortcut icon" href="<?= site_url() ?>favicon_folder/favicon.ico">
+<?php endif; ?>
 
 <!-- Critical CSS - Load first -->
 <link rel="stylesheet" href="<?= site_url() ?>assets/css/bootstrap.min.css">

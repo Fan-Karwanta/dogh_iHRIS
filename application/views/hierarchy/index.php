@@ -4,7 +4,63 @@
     background: #f8f9fa;
     border-radius: 8px;
     padding: 20px;
+    overflow: hidden;
+    position: relative;
+}
+
+.zoom-controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 100;
+    background: white;
+    border-radius: 8px;
+    padding: 5px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.zoom-controls button {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: #f8f9fa;
+    border-radius: 4px;
+    margin: 2px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.zoom-controls button:hover {
+    background: #e9ecef;
+}
+
+.zoom-controls .zoom-level {
+    display: inline-block;
+    min-width: 50px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.tree-viewport {
+    width: 100%;
+    height: 550px;
     overflow: auto;
+    cursor: grab;
+    position: relative;
+}
+
+.tree-viewport:active {
+    cursor: grabbing;
+}
+
+.tree-viewport-inner {
+    transform-origin: center center;
+    transition: transform 0.1s ease;
+    min-width: 2000px;
+    min-height: 1500px;
+    padding: 100px 500px;
+    display: inline-block;
 }
 
 .tree-canvas {
@@ -381,12 +437,22 @@
                     </div>
                     <div class="card-body">
                         <div class="hierarchy-container" id="hierarchyContainer">
-                            <div class="org-chart" id="orgChart">
-                                <!-- Tree will be rendered here -->
+                            <div class="zoom-controls">
+                                <button onclick="zoomIn()" title="Zoom In"><i class="fas fa-plus"></i></button>
+                                <span class="zoom-level" id="zoomLevel">100%</span>
+                                <button onclick="zoomOut()" title="Zoom Out"><i class="fas fa-minus"></i></button>
+                                <button onclick="resetZoom()" title="Reset"><i class="fas fa-compress-arrows-alt"></i></button>
                             </div>
-                            <div class="drop-zone root-drop-zone" id="rootDropZone" style="display: none;">
-                                <i class="fas fa-plus-circle mr-2"></i>
-                                Drop here to add as root node
+                            <div class="tree-viewport" id="treeViewport">
+                                <div class="tree-viewport-inner" id="treeViewportInner">
+                                    <div class="org-chart" id="orgChart">
+                                        <!-- Tree will be rendered here -->
+                                    </div>
+                                    <div class="drop-zone root-drop-zone" id="rootDropZone" style="display: none;">
+                                        <i class="fas fa-plus-circle mr-2"></i>
+                                        Drop here to add as root node
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -808,6 +874,107 @@ $(document).ready(function() {
 
     renderTree();
     renderPersonnelList();
+    
+    // Initialize pan functionality
+    initPanZoom();
+    
+    // Center scroll position on load
+    setTimeout(function() {
+        const viewport = document.getElementById('treeViewport');
+        const inner = document.getElementById('treeViewportInner');
+        if (viewport && inner) {
+            viewport.scrollLeft = (inner.scrollWidth - viewport.clientWidth) / 2;
+            viewport.scrollTop = 50;
+        }
+    }, 100);
 });
 } // End initHierarchyModule
+
+// Zoom and Pan functionality
+let currentZoom = 1;
+const minZoom = 0.5;
+const maxZoom = 2;
+const zoomStep = 0.1;
+
+function zoomIn() {
+    if (currentZoom < maxZoom) {
+        currentZoom = Math.min(currentZoom + zoomStep, maxZoom);
+        applyZoom();
+    }
+}
+
+function zoomOut() {
+    if (currentZoom > minZoom) {
+        currentZoom = Math.max(currentZoom - zoomStep, minZoom);
+        applyZoom();
+    }
+}
+
+function resetZoom() {
+    currentZoom = 1;
+    applyZoom();
+    const viewport = document.getElementById('treeViewport');
+    const inner = document.getElementById('treeViewportInner');
+    // Center the scroll position
+    viewport.scrollLeft = (inner.scrollWidth - viewport.clientWidth) / 2;
+    viewport.scrollTop = 50;
+}
+
+function applyZoom() {
+    const inner = document.getElementById('treeViewportInner');
+    inner.style.transform = 'scale(' + currentZoom + ')';
+    document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
+}
+
+function initPanZoom() {
+    const viewport = document.getElementById('treeViewport');
+    let isPanning = false;
+    let startX, startY, scrollLeft, scrollTop;
+
+    viewport.addEventListener('mousedown', function(e) {
+        if (e.target.closest('.hierarchy-node') || e.target.closest('.drop-zone') || e.target.closest('button')) {
+            return;
+        }
+        isPanning = true;
+        viewport.style.cursor = 'grabbing';
+        startX = e.pageX - viewport.offsetLeft;
+        startY = e.pageY - viewport.offsetTop;
+        scrollLeft = viewport.scrollLeft;
+        scrollTop = viewport.scrollTop;
+        e.preventDefault();
+    });
+
+    viewport.addEventListener('mouseleave', function() {
+        isPanning = false;
+        viewport.style.cursor = 'grab';
+    });
+
+    viewport.addEventListener('mouseup', function() {
+        isPanning = false;
+        viewport.style.cursor = 'grab';
+    });
+
+    viewport.addEventListener('mousemove', function(e) {
+        if (!isPanning) return;
+        e.preventDefault();
+        const x = e.pageX - viewport.offsetLeft;
+        const y = e.pageY - viewport.offsetTop;
+        const walkX = (x - startX) * 1.5;
+        const walkY = (y - startY) * 1.5;
+        viewport.scrollLeft = scrollLeft - walkX;
+        viewport.scrollTop = scrollTop - walkY;
+    });
+
+    // Mouse wheel zoom
+    viewport.addEventListener('wheel', function(e) {
+        if (e.ctrlKey) {
+            e.preventDefault();
+            if (e.deltaY < 0) {
+                zoomIn();
+            } else {
+                zoomOut();
+            }
+        }
+    }, { passive: false });
+}
 </script>

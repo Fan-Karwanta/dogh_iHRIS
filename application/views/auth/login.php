@@ -32,6 +32,11 @@
 				<button type="submit" class="btn btn-primary btn-rounded btn-login">Sign In</button>
 			</div>
 			<div class="login-account">
+				<a href="<?= site_url('/userauth') ?>" class="btn btn-secondary btn-rounded mb-3">
+					<i class="fas fa-arrow-left mr-2"></i>Back to User Selection
+				</a>
+			</div>
+			<div class="login-account">
 				<span class="msg">Powered by: </span>
 				<a href="https://web.facebook.com/p/Davao-Occidental-General-Hospital-100089814696152/?_rdc=1&_rdr#" class="link" target="_blank">DOGH</a>
 			</div>

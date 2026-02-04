@@ -217,6 +217,12 @@ $sys = $GLOBALS['_sys_cache'];
                             <p>Hierarchy Approval</p>
                         </a>
                     </li>
+                    <li class="nav-item <?= $current_controller == 'admindtrapproval' ? 'active' : null ?>">
+                        <a href="<?= site_url('admindtrapproval') ?>">
+                            <i class="fas fa-check-double"></i>
+                            <p>DTR Edit Requests</p>
+                        </a>
+                    </li>
                     <li class="nav-item <?= $current_page == 'users' || ($current_controller == 'settings' && ($current_page == 'departments' || $current_page == 'holidays')) ? 'active' : null ?>">
                         <a data-toggle="collapse" href="#settings">
                             <i class="fas fa-cogs"></i>
