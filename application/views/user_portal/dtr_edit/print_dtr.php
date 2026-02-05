@@ -76,6 +76,17 @@ $time = array_values($dtr_data);
 <head>
     <title>DTR - <?= $personnel->firstname ?> <?= $personnel->lastname ?> - <?= date('F Y', strtotime($selected_month . '-01')) ?></title>
     <style>
+        /* ============================================
+           CUSTOMIZABLE FONT SIZE SETTINGS
+           Adjust these values to change print sizes
+           ============================================ */
+        :root {
+            --header-font-size: 12px;      /* Headers: Republic of PH, DOH, etc. */
+            --table-header-font-size: 10px; /* Table headers: AM, PM, Undertime */
+            --table-cell-font-size: 10px;   /* Table cells: Arrival, Departure, data */
+            --body-text-font-size: 11px;    /* Body text: certification, labels */
+        }
+        
         @page {
             size: portrait;
             margin: 5mm;
@@ -169,28 +180,28 @@ $time = array_values($dtr_data);
                     </tr>
                     <?php endif; ?>
                     <tr>
-                        <td colspan="7" style="text-align: center; border: none; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">
+                        <td colspan="7" style="text-align: center; border: none; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; color: black;">
                             <strong>Republic of the Philippines</strong>
                         </td>
                     </tr>
                     <tr>
-                        <td colspan="7" style="text-align: center; border: none; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">
+                        <td colspan="7" style="text-align: center; border: none; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; color: black;">
                             <strong>Department of Health</strong>
                         </td>
                     </tr>
                     <tr>
-                        <td colspan="7" style="text-align: center; border: none; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">
+                        <td colspan="7" style="text-align: center; border: none; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; color: black;">
                             <strong>REGION XI</strong>
                         </td>
                     </tr>
                     <tr>
-                        <td colspan="7" style="text-align: center; border: none; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><strong>DAVAO OCCIDENTAL GENERAL HOSPITAL</strong></td>
+                        <td colspan="7" style="text-align: center; border: none; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; color: black;"><strong>DAVAO OCCIDENTAL GENERAL HOSPITAL</strong></td>
                     </tr>
                     <tr>
                         <td colspan="7" style="border: none; height: 10px;"></td>
                     </tr>
                     <tr>
-                        <td colspan="7" style="text-align: left; border: none; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">
+                        <td colspan="7" style="text-align: left; border: none; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; color: black;">
                             <strong>Civil Service Form 48</strong>
                         </td>
                     </tr>
@@ -198,7 +209,7 @@ $time = array_values($dtr_data);
                         <td colspan="7" style="border: none; height: 5px;"></td>
                     </tr>
                     <tr>
-                        <td style="text-align: left; border: none; padding: 5px 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black; vertical-align: bottom; width: 10%;">Name:</td>
+                        <td style="text-align: left; border: none; padding: 5px 2px; font-size: 10px; font-family: 'Times New Roman', serif; color: black; vertical-align: bottom; width: 10%;">Name:</td>
                         <td colspan="2" style="text-align: center; border: none; border-bottom: 1px solid black; padding: 5px 2px; font-size: <?= $name_font_size ?>; font-family: 'Times New Roman', serif; color: black; font-weight: bold;">
                             <?= strtoupper($personnel->lastname) ?>
                         </td>
@@ -217,8 +228,8 @@ $time = array_values($dtr_data);
                         <td colspan="7" style="border: none; height: 8px;"></td>
                     </tr>
                     <tr>
-                        <td style="text-align: left; border: none; padding: 5px 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black; vertical-align: bottom; width: 15%;">For the Month</td>
-                        <td colspan="3" style="text-align: center; border: none; border-bottom: 1px solid black; padding: 5px 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black; width: 85%; font-weight: bold;">
+                        <td style="text-align: left; border: none; padding: 5px 2px; font-size: 10px; font-family: 'Times New Roman', serif; color: black; vertical-align: bottom; width: 15%;">For the Month</td>
+                        <td colspan="3" style="text-align: center; border: none; border-bottom: 1px solid black; padding: 5px 2px; font-size: 10px; font-family: 'Times New Roman', serif; color: black; width: 85%; font-weight: bold;">
                             <?= strtoupper(date('F Y', strtotime($selected_month . '-01'))) ?>
                         </td>
                     </tr>
@@ -226,34 +237,34 @@ $time = array_values($dtr_data);
                         <td colspan="7" style="border: none; height: 10px;"></td>
                     </tr>
                     <tr>
-                        <td colspan="7" style="text-align: left; border: none; padding: 5px 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">Official Hours For Arrival and Departure</td>
+                        <td colspan="7" style="text-align: left; border: none; padding: 5px 2px; font-size: 10px; font-family: 'Times New Roman', serif; color: black;">Official Hours For Arrival and Departure</td>
                     </tr>
                     <tr>
                         <td colspan="7" style="border: none; height: 5px;"></td>
                     </tr>
                     <tr>
-                        <td style="text-align: left; border: none; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">Regular Days:</td>
-                        <td colspan="2" style="text-align: center; border: none; border-bottom: 1px solid black; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">8:00 AM - 5:00 PM</td>
-                        <td style="text-align: left; border: none; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">Saturdays:</td>
-                        <td colspan="3" style="text-align: center; border: none; border-bottom: 1px solid black; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">AS REQUIRED</td>
+                        <td style="text-align: left; border: none; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; color: black;">Regular Days:</td>
+                        <td colspan="2" style="text-align: center; border: none; border-bottom: 1px solid black; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; color: black;">8:00 AM - 5:00 PM</td>
+                        <td style="text-align: left; border: none; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; color: black;">Saturdays:</td>
+                        <td colspan="3" style="text-align: center; border: none; border-bottom: 1px solid black; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; color: black;">AS REQUIRED</td>
                     </tr>
                     <tr>
                         <td colspan="7" style="border: none; height: 10px;"></td>
                     </tr>
                     <tr>
-                        <td style="border: 1px solid black; padding: 4px; font-size: 13px; font-family: 'Times New Roman', serif; text-align: center; vertical-align: middle; color: black; width: 14.28%;">Date</td>
-                        <td colspan="2" style="border: 1px solid black; padding: 4px; font-size: 13px; font-family: 'Times New Roman', serif; text-align: center; color: black; font-style: italic; font-weight: bold;">AM</td>
-                        <td colspan="2" style="border: 1px solid black; padding: 4px; font-size: 13px; font-family: 'Times New Roman', serif; text-align: center; color: black; font-style: italic; font-weight: bold;">PM</td>
-                        <td colspan="2" style="border: 1px solid black; padding: 4px; font-size: 13px; font-family: 'Times New Roman', serif; text-align: center; color: black; font-style: italic; font-weight: bold;">Undertime</td>
+                        <td style="border: 1px solid black; padding: 4px; font-size: 10px; font-family: 'Times New Roman', serif; text-align: center; vertical-align: middle; color: black; width: 14.28%;">Date</td>
+                        <td colspan="2" style="border: 1px solid black; padding: 4px; font-size: 10px; font-family: 'Times New Roman', serif; text-align: center; color: black; font-style: italic; font-weight: bold;">AM</td>
+                        <td colspan="2" style="border: 1px solid black; padding: 4px; font-size: 10px; font-family: 'Times New Roman', serif; text-align: center; color: black; font-style: italic; font-weight: bold;">PM</td>
+                        <td colspan="2" style="border: 1px solid black; padding: 4px; font-size: 10px; font-family: 'Times New Roman', serif; text-align: center; color: black; font-style: italic; font-weight: bold;">Undertime</td>
                     </tr>
                     <tr>
-                        <td style="border: 1px solid black; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; text-align: center; color: black; width: 14.28%;"></td>
-                        <td style="border: 1px solid black; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; text-align: center; color: black; width: 14.28%; font-style: italic;">Arrival</td>
-                        <td style="border: 1px solid black; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; text-align: center; color: black; width: 14.28%; font-style: italic;">Departure</td>
-                        <td style="border: 1px solid black; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; text-align: center; color: black; width: 14.28%; font-style: italic;">Arrival</td>
-                        <td style="border: 1px solid black; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; text-align: center; color: black; width: 14.28%; font-style: italic;">Departure</td>
-                        <td style="border: 1px solid black; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; text-align: center; color: black; width: 14.28%; font-style: italic;">Hours</td>
-                        <td style="border: 1px solid black; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; text-align: center; color: black; width: 14.28%; font-style: italic;">Minutes</td>
+                        <td style="border: 1px solid black; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; text-align: center; color: black; width: 14.28%;"></td>
+                        <td style="border: 1px solid black; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; text-align: center; color: black; width: 14.28%; font-style: italic;">Arrival</td>
+                        <td style="border: 1px solid black; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; text-align: center; color: black; width: 14.28%; font-style: italic;">Departure</td>
+                        <td style="border: 1px solid black; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; text-align: center; color: black; width: 14.28%; font-style: italic;">Arrival</td>
+                        <td style="border: 1px solid black; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; text-align: center; color: black; width: 14.28%; font-style: italic;">Departure</td>
+                        <td style="border: 1px solid black; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; text-align: center; color: black; width: 14.28%; font-style: italic;">Hours</td>
+                        <td style="border: 1px solid black; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; text-align: center; color: black; width: 14.28%; font-style: italic;">Minutes</td>
                     </tr>
                 </thead>
                 <tbody>
@@ -266,36 +277,36 @@ $time = array_values($dtr_data);
                         $has_label_change = isset($label_changes[$date]);
                     ?>
                     <tr>
-                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= $i ?></td>
+                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 10px; font-family: 'Times New Roman', serif; color: black;"><?= $i ?></td>
                         <?php if ($has_label_change): ?>
-                            <td colspan="6" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><strong><?= $label_changes[$date]->new_value ?></strong></td>
+                            <td colspan="6" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 10px; font-family: 'Times New Roman', serif; color: black;"><strong><?= $label_changes[$date]->new_value ?></strong></td>
                         <?php elseif ($is_weekend && !$has_entries && empty($day_changes)): ?>
-                            <td colspan="6" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><strong><?= getWeekendLabelPrint($date) ?></strong></td>
+                            <td colspan="6" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 10px; font-family: 'Times New Roman', serif; color: black;"><strong><?= getWeekendLabelPrint($date) ?></strong></td>
                         <?php else:
                             $fields = ['morning_in' => 'am_in', 'morning_out' => 'am_out', 'afternoon_in' => 'pm_in', 'afternoon_out' => 'pm_out'];
                             foreach ($fields as $field => $db_field):
                                 $change = isset($day_changes[$field]) ? $day_changes[$field] : null;
                                 $value = $change ? $change->new_value : (isset($record->$db_field) ? $record->$db_field : '');
                         ?>
-                            <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= $value ? date('h:i', strtotime($value)) : '' ?></td>
+                            <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 10px; font-family: 'Times New Roman', serif; color: black;"><?= $value ? date('h:i', strtotime($value)) : '' ?></td>
                         <?php endforeach; 
                             $ut_hours_change = isset($day_changes['undertime_hours']) ? $day_changes['undertime_hours'] : null;
                             $ut_mins_change = isset($day_changes['undertime_minutes']) ? $day_changes['undertime_minutes'] : null;
                             $ut_hours = $ut_hours_change ? $ut_hours_change->new_value : (isset($record->undertime_hours) ? $record->undertime_hours : '');
                             $ut_mins = $ut_mins_change ? $ut_mins_change->new_value : (isset($record->undertime_minutes) ? $record->undertime_minutes : '');
                         ?>
-                            <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= $ut_hours ?></td>
-                            <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= $ut_mins ?></td>
+                            <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 10px; font-family: 'Times New Roman', serif; color: black;"><?= $ut_hours ?></td>
+                            <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 10px; font-family: 'Times New Roman', serif; color: black;"><?= $ut_mins ?></td>
                         <?php endif; ?>
                     </tr>
                     <?php endfor; ?>
                     
                     <!-- Total Working Days Row -->
                     <tr style="background-color: #f8f9fa; font-weight: bold;">
-                        <td colspan="6" style="border: 1px solid black; padding: 5px; text-align: left; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">
+                        <td colspan="6" style="border: 1px solid black; padding: 5px; text-align: left; font-size: 10px; font-family: 'Times New Roman', serif; color: black;">
                             <strong>Total Number of Days Present</strong>
                         </td>
-                        <td style="border: 1px solid black; padding: 5px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">
+                        <td style="border: 1px solid black; padding: 5px; text-align: center; font-size: 10px; font-family: 'Times New Roman', serif; color: black;">
                             <strong></strong>
                         </td>
                     </tr>
@@ -306,7 +317,7 @@ $time = array_values($dtr_data);
             <table class="w-100" style="margin-top: 10px; border-collapse: collapse;">
                 <tr>
                     <td colspan="7" style="padding: 5px;">
-                        <div style="text-align: left; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">
+                        <div style="text-align: left; font-size: 10px; font-family: 'Times New Roman', serif; color: black;">
                             I certify on my honor that the above is true and correct report of the hours of work performed, record of which was made daily at the time of arrival and departure from the office.
                         </div>
                     </td>
@@ -314,14 +325,14 @@ $time = array_values($dtr_data);
                 <tr>
                     <td colspan="7" style="padding: 10px 5px;">
                         <div style="text-align: center;">
-                            <strong style="font-size: 13px; font-family: 'Times New Roman', serif; text-decoration: underline; color: black;"><?= strtoupper(!empty($personnel->middlename[0]) ? $personnel->firstname . ' ' . $personnel->middlename[0] . '. ' . $personnel->lastname : $personnel->firstname . ' ' . $personnel->lastname) ?></strong><br>
-                            <span style="font-size: 13px; font-family: 'Times New Roman', serif; color: black;">Employee</span>
+                            <strong style="font-size: 10px; font-family: 'Times New Roman', serif; text-decoration: underline; color: black;"><?= strtoupper(!empty($personnel->middlename[0]) ? $personnel->firstname . ' ' . $personnel->middlename[0] . '. ' . $personnel->lastname : $personnel->firstname . ' ' . $personnel->lastname) ?></strong><br>
+                            <span style="font-size: 10px; font-family: 'Times New Roman', serif; color: black;">Employee</span>
                         </div>
                     </td>
                 </tr>
                 <tr>
                     <td colspan="7" style="padding: 5px;">
-                        <div style="text-align: left; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">
+                        <div style="text-align: left; font-size: 10px; font-family: 'Times New Roman', serif; color: black;">
                             Verified as the prescribed office hours:
                         </div>
                     </td>
@@ -330,11 +341,11 @@ $time = array_values($dtr_data);
                     <td colspan="7" style="padding: 10px 5px;">
                         <div style="text-align: center;">
                             <?php if ($approver): ?>
-                            <strong style="font-size: 13px; font-family: 'Times New Roman', serif; text-decoration: underline; color: black;"><?= strtoupper(!empty($approver->middlename[0]) ? $approver->firstname . ' ' . $approver->middlename[0] . '. ' . $approver->lastname : $approver->firstname . ' ' . $approver->lastname) ?></strong><br>
+                            <strong style="font-size: 10px; font-family: 'Times New Roman', serif; text-decoration: underline; color: black;"><?= strtoupper(!empty($approver->middlename[0]) ? $approver->firstname . ' ' . $approver->middlename[0] . '. ' . $approver->lastname : $approver->firstname . ' ' . $approver->lastname) ?></strong><br>
                             <?php else: ?>
                             <div style="border-bottom: 1px solid black; width: 250px; margin: 0 auto 2px auto; height: 15px;"></div>
                             <?php endif; ?>
-                            <span style="font-size: 13px; font-family: 'Times New Roman', serif; color: black;">Immediate Supervisor</span>
+                            <span style="font-size: 10px; font-family: 'Times New Roman', serif; color: black;">Immediate Supervisor</span>
                         </div>
                     </td>
                 </tr>
@@ -353,28 +364,28 @@ $time = array_values($dtr_data);
                     </tr>
                     <?php endif; ?>
                     <tr>
-                        <td colspan="7" style="text-align: center; border: none; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">
+                        <td colspan="7" style="text-align: center; border: none; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; color: black;">
                             <strong>Republic of the Philippines</strong>
                         </td>
                     </tr>
                     <tr>
-                        <td colspan="7" style="text-align: center; border: none; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">
+                        <td colspan="7" style="text-align: center; border: none; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; color: black;">
                             <strong>Department of Health</strong>
                         </td>
                     </tr>
                     <tr>
-                        <td colspan="7" style="text-align: center; border: none; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">
+                        <td colspan="7" style="text-align: center; border: none; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; color: black;">
                             <strong>REGION XI</strong>
                         </td>
                     </tr>
                     <tr>
-                        <td colspan="7" style="text-align: center; border: none; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><strong>DAVAO OCCIDENTAL GENERAL HOSPITAL</strong></td>
+                        <td colspan="7" style="text-align: center; border: none; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; color: black;"><strong>DAVAO OCCIDENTAL GENERAL HOSPITAL</strong></td>
                     </tr>
                     <tr>
                         <td colspan="7" style="border: none; height: 10px;"></td>
                     </tr>
                     <tr>
-                        <td colspan="7" style="text-align: left; border: none; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">
+                        <td colspan="7" style="text-align: left; border: none; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; color: black;">
                             <strong>Civil Service Form 48</strong>
                         </td>
                     </tr>
@@ -382,7 +393,7 @@ $time = array_values($dtr_data);
                         <td colspan="7" style="border: none; height: 5px;"></td>
                     </tr>
                     <tr>
-                        <td style="text-align: left; border: none; padding: 5px 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black; vertical-align: bottom; width: 10%;">Name:</td>
+                        <td style="text-align: left; border: none; padding: 5px 2px; font-size: 10px; font-family: 'Times New Roman', serif; color: black; vertical-align: bottom; width: 10%;">Name:</td>
                         <td colspan="2" style="text-align: center; border: none; border-bottom: 1px solid black; padding: 5px 2px; font-size: <?= $name_font_size ?>; font-family: 'Times New Roman', serif; color: black; font-weight: bold;">
                             <?= strtoupper($personnel->lastname) ?>
                         </td>
@@ -401,8 +412,8 @@ $time = array_values($dtr_data);
                         <td colspan="7" style="border: none; height: 8px;"></td>
                     </tr>
                     <tr>
-                        <td style="text-align: left; border: none; padding: 5px 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black; vertical-align: bottom; width: 15%;">For the Month</td>
-                        <td colspan="3" style="text-align: center; border: none; border-bottom: 1px solid black; padding: 5px 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black; width: 85%; font-weight: bold;">
+                        <td style="text-align: left; border: none; padding: 5px 2px; font-size: 10px; font-family: 'Times New Roman', serif; color: black; vertical-align: bottom; width: 15%;">For the Month</td>
+                        <td colspan="3" style="text-align: center; border: none; border-bottom: 1px solid black; padding: 5px 2px; font-size: 10px; font-family: 'Times New Roman', serif; color: black; width: 85%; font-weight: bold;">
                             <?= strtoupper(date('F Y', strtotime($selected_month . '-01'))) ?>
                         </td>
                     </tr>
@@ -410,34 +421,34 @@ $time = array_values($dtr_data);
                         <td colspan="7" style="border: none; height: 10px;"></td>
                     </tr>
                     <tr>
-                        <td colspan="7" style="text-align: left; border: none; padding: 5px 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">Official Hours For Arrival and Departure</td>
+                        <td colspan="7" style="text-align: left; border: none; padding: 5px 2px; font-size: 10px; font-family: 'Times New Roman', serif; color: black;">Official Hours For Arrival and Departure</td>
                     </tr>
                     <tr>
                         <td colspan="7" style="border: none; height: 5px;"></td>
                     </tr>
                     <tr>
-                        <td style="text-align: left; border: none; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">Regular Days:</td>
-                        <td colspan="2" style="text-align: center; border: none; border-bottom: 1px solid black; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">8:00 AM - 5:00 PM</td>
-                        <td style="text-align: left; border: none; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">Saturdays:</td>
-                        <td colspan="3" style="text-align: center; border: none; border-bottom: 1px solid black; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">AS REQUIRED</td>
+                        <td style="text-align: left; border: none; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; color: black;">Regular Days:</td>
+                        <td colspan="2" style="text-align: center; border: none; border-bottom: 1px solid black; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; color: black;">8:00 AM - 5:00 PM</td>
+                        <td style="text-align: left; border: none; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; color: black;">Saturdays:</td>
+                        <td colspan="3" style="text-align: center; border: none; border-bottom: 1px solid black; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; color: black;">AS REQUIRED</td>
                     </tr>
                     <tr>
                         <td colspan="7" style="border: none; height: 10px;"></td>
                     </tr>
                     <tr>
-                        <td style="border: 1px solid black; padding: 4px; font-size: 13px; font-family: 'Times New Roman', serif; text-align: center; vertical-align: middle; color: black; width: 14.28%;">Date</td>
-                        <td colspan="2" style="border: 1px solid black; padding: 4px; font-size: 13px; font-family: 'Times New Roman', serif; text-align: center; color: black; font-style: italic; font-weight: bold;">AM</td>
-                        <td colspan="2" style="border: 1px solid black; padding: 4px; font-size: 13px; font-family: 'Times New Roman', serif; text-align: center; color: black; font-style: italic; font-weight: bold;">PM</td>
-                        <td colspan="2" style="border: 1px solid black; padding: 4px; font-size: 13px; font-family: 'Times New Roman', serif; text-align: center; color: black; font-style: italic; font-weight: bold;">Undertime</td>
+                        <td style="border: 1px solid black; padding: 4px; font-size: 10px; font-family: 'Times New Roman', serif; text-align: center; vertical-align: middle; color: black; width: 14.28%;">Date</td>
+                        <td colspan="2" style="border: 1px solid black; padding: 4px; font-size: 10px; font-family: 'Times New Roman', serif; text-align: center; color: black; font-style: italic; font-weight: bold;">AM</td>
+                        <td colspan="2" style="border: 1px solid black; padding: 4px; font-size: 10px; font-family: 'Times New Roman', serif; text-align: center; color: black; font-style: italic; font-weight: bold;">PM</td>
+                        <td colspan="2" style="border: 1px solid black; padding: 4px; font-size: 10px; font-family: 'Times New Roman', serif; text-align: center; color: black; font-style: italic; font-weight: bold;">Undertime</td>
                     </tr>
                     <tr>
-                        <td style="border: 1px solid black; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; text-align: center; color: black; width: 14.28%;"></td>
-                        <td style="border: 1px solid black; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; text-align: center; color: black; width: 14.28%; font-style: italic;">Arrival</td>
-                        <td style="border: 1px solid black; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; text-align: center; color: black; width: 14.28%; font-style: italic;">Departure</td>
-                        <td style="border: 1px solid black; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; text-align: center; color: black; width: 14.28%; font-style: italic;">Arrival</td>
-                        <td style="border: 1px solid black; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; text-align: center; color: black; width: 14.28%; font-style: italic;">Departure</td>
-                        <td style="border: 1px solid black; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; text-align: center; color: black; width: 14.28%; font-style: italic;">Hours</td>
-                        <td style="border: 1px solid black; padding: 2px; font-size: 13px; font-family: 'Times New Roman', serif; text-align: center; color: black; width: 14.28%; font-style: italic;">Minutes</td>
+                        <td style="border: 1px solid black; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; text-align: center; color: black; width: 14.28%;"></td>
+                        <td style="border: 1px solid black; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; text-align: center; color: black; width: 14.28%; font-style: italic;">Arrival</td>
+                        <td style="border: 1px solid black; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; text-align: center; color: black; width: 14.28%; font-style: italic;">Departure</td>
+                        <td style="border: 1px solid black; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; text-align: center; color: black; width: 14.28%; font-style: italic;">Arrival</td>
+                        <td style="border: 1px solid black; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; text-align: center; color: black; width: 14.28%; font-style: italic;">Departure</td>
+                        <td style="border: 1px solid black; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; text-align: center; color: black; width: 14.28%; font-style: italic;">Hours</td>
+                        <td style="border: 1px solid black; padding: 2px; font-size: 10px; font-family: 'Times New Roman', serif; text-align: center; color: black; width: 14.28%; font-style: italic;">Minutes</td>
                     </tr>
                 </thead>
                 <tbody>
@@ -450,36 +461,36 @@ $time = array_values($dtr_data);
                         $has_label_change = isset($label_changes[$date]);
                     ?>
                     <tr>
-                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= $i ?></td>
+                        <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 10px; font-family: 'Times New Roman', serif; color: black;"><?= $i ?></td>
                         <?php if ($has_label_change): ?>
-                            <td colspan="6" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><strong><?= $label_changes[$date]->new_value ?></strong></td>
+                            <td colspan="6" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 10px; font-family: 'Times New Roman', serif; color: black;"><strong><?= $label_changes[$date]->new_value ?></strong></td>
                         <?php elseif ($is_weekend && !$has_entries && empty($day_changes)): ?>
-                            <td colspan="6" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><strong><?= getWeekendLabelPrint($date) ?></strong></td>
+                            <td colspan="6" style="border: 1px solid black; padding: 2px; text-align: center; font-size: 10px; font-family: 'Times New Roman', serif; color: black;"><strong><?= getWeekendLabelPrint($date) ?></strong></td>
                         <?php else:
                             $fields = ['morning_in' => 'am_in', 'morning_out' => 'am_out', 'afternoon_in' => 'pm_in', 'afternoon_out' => 'pm_out'];
                             foreach ($fields as $field => $db_field):
                                 $change = isset($day_changes[$field]) ? $day_changes[$field] : null;
                                 $value = $change ? $change->new_value : (isset($record->$db_field) ? $record->$db_field : '');
                         ?>
-                            <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= $value ? date('h:i', strtotime($value)) : '' ?></td>
+                            <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 10px; font-family: 'Times New Roman', serif; color: black;"><?= $value ? date('h:i', strtotime($value)) : '' ?></td>
                         <?php endforeach; 
                             $ut_hours_change = isset($day_changes['undertime_hours']) ? $day_changes['undertime_hours'] : null;
                             $ut_mins_change = isset($day_changes['undertime_minutes']) ? $day_changes['undertime_minutes'] : null;
                             $ut_hours = $ut_hours_change ? $ut_hours_change->new_value : (isset($record->undertime_hours) ? $record->undertime_hours : '');
                             $ut_mins = $ut_mins_change ? $ut_mins_change->new_value : (isset($record->undertime_minutes) ? $record->undertime_minutes : '');
                         ?>
-                            <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= $ut_hours ?></td>
-                            <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;"><?= $ut_mins ?></td>
+                            <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 10px; font-family: 'Times New Roman', serif; color: black;"><?= $ut_hours ?></td>
+                            <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 10px; font-family: 'Times New Roman', serif; color: black;"><?= $ut_mins ?></td>
                         <?php endif; ?>
                     </tr>
                     <?php endfor; ?>
                     
                     <!-- Total Working Days Row -->
                     <tr style="background-color: #f8f9fa; font-weight: bold;">
-                        <td colspan="6" style="border: 1px solid black; padding: 5px; text-align: left; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">
+                        <td colspan="6" style="border: 1px solid black; padding: 5px; text-align: left; font-size: 10px; font-family: 'Times New Roman', serif; color: black;">
                             <strong>Total Number of Days Present</strong>
                         </td>
-                        <td style="border: 1px solid black; padding: 5px; text-align: center; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">
+                        <td style="border: 1px solid black; padding: 5px; text-align: center; font-size: 10px; font-family: 'Times New Roman', serif; color: black;">
                             <strong></strong>
                         </td>
                     </tr>
@@ -490,7 +501,7 @@ $time = array_values($dtr_data);
             <table class="w-100" style="margin-top: 10px; border-collapse: collapse;">
                 <tr>
                     <td colspan="7" style="padding: 5px;">
-                        <div style="text-align: left; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">
+                        <div style="text-align: left; font-size: 10px; font-family: 'Times New Roman', serif; color: black;">
                             I certify on my honor that the above is true and correct report of the hours of work performed, record of which was made daily at the time of arrival and departure from the office.
                         </div>
                     </td>
@@ -498,14 +509,14 @@ $time = array_values($dtr_data);
                 <tr>
                     <td colspan="7" style="padding: 10px 5px;">
                         <div style="text-align: center;">
-                            <strong style="font-size: 13px; font-family: 'Times New Roman', serif; text-decoration: underline; color: black;"><?= strtoupper(!empty($personnel->middlename[0]) ? $personnel->firstname . ' ' . $personnel->middlename[0] . '. ' . $personnel->lastname : $personnel->firstname . ' ' . $personnel->lastname) ?></strong><br>
-                            <span style="font-size: 13px; font-family: 'Times New Roman', serif; color: black;">Employee</span>
+                            <strong style="font-size: 10px; font-family: 'Times New Roman', serif; text-decoration: underline; color: black;"><?= strtoupper(!empty($personnel->middlename[0]) ? $personnel->firstname . ' ' . $personnel->middlename[0] . '. ' . $personnel->lastname : $personnel->firstname . ' ' . $personnel->lastname) ?></strong><br>
+                            <span style="font-size: 10px; font-family: 'Times New Roman', serif; color: black;">Employee</span>
                         </div>
                     </td>
                 </tr>
                 <tr>
                     <td colspan="7" style="padding: 5px;">
-                        <div style="text-align: left; font-size: 13px; font-family: 'Times New Roman', serif; color: black;">
+                        <div style="text-align: left; font-size: 10px; font-family: 'Times New Roman', serif; color: black;">
                             Verified as the prescribed office hours:
                         </div>
                     </td>
@@ -514,11 +525,11 @@ $time = array_values($dtr_data);
                     <td colspan="7" style="padding: 10px 5px;">
                         <div style="text-align: center;">
                             <?php if ($approver): ?>
-                            <strong style="font-size: 13px; font-family: 'Times New Roman', serif; text-decoration: underline; color: black;"><?= strtoupper(!empty($approver->middlename[0]) ? $approver->firstname . ' ' . $approver->middlename[0] . '. ' . $approver->lastname : $approver->firstname . ' ' . $approver->lastname) ?></strong><br>
+                            <strong style="font-size: 10px; font-family: 'Times New Roman', serif; text-decoration: underline; color: black;"><?= strtoupper(!empty($approver->middlename[0]) ? $approver->firstname . ' ' . $approver->middlename[0] . '. ' . $approver->lastname : $approver->firstname . ' ' . $approver->lastname) ?></strong><br>
                             <?php else: ?>
                             <div style="border-bottom: 1px solid black; width: 250px; margin: 0 auto 2px auto; height: 15px;"></div>
                             <?php endif; ?>
-                            <span style="font-size: 13px; font-family: 'Times New Roman', serif; color: black;">Immediate Supervisor</span>
+                            <span style="font-size: 10px; font-family: 'Times New Roman', serif; color: black;">Immediate Supervisor</span>
                         </div>
                     </td>
                 </tr>

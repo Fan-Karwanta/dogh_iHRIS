@@ -337,7 +337,16 @@ $sys = $this->db->get('systems')->row();
                     <div class="custom-control custom-checkbox">
                         <input type="checkbox" class="custom-control-input" id="terms" required>
                         <label class="custom-control-label" for="terms">
-                            I agree that the information provided is accurate and I understand that my account requires admin approval.
+                            I agree that the information provided is accurate and correct.
+                        </label>
+                    </div>
+                </div>
+
+                                <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" id="terms2" required>
+                        <label class="custom-control-label" for="terms2">
+                            I agree to share my information and get approval from admin.
                         </label>
                     </div>
                 </div>

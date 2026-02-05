@@ -45,7 +45,7 @@
                     <i class="fas fa-calendar-check"></i>
                 </div>
                 <div class="ml-3">
-                    <div class="stat-value"><?= isset($monthly_stats->present_days) ? $monthly_stats->present_days : 0 ?></div>
+                    <div class="stat-value"><?= isset($monthly_stats['present_days']) ? $monthly_stats['present_days'] : 0 ?></div>
                     <div class="stat-label">Present Days</div>
                 </div>
             </div>
@@ -58,7 +58,7 @@
                     <i class="fas fa-calendar-times"></i>
                 </div>
                 <div class="ml-3">
-                    <div class="stat-value"><?= isset($monthly_stats->absent_days) ? $monthly_stats->absent_days : 0 ?></div>
+                    <div class="stat-value"><?= isset($monthly_stats['absent_days']) ? $monthly_stats['absent_days'] : 0 ?></div>
                     <div class="stat-label">Absent Days</div>
                 </div>
             </div>
@@ -71,7 +71,7 @@
                     <i class="fas fa-clock"></i>
                 </div>
                 <div class="ml-3">
-                    <div class="stat-value"><?= isset($monthly_stats->late_count) ? $monthly_stats->late_count : 0 ?></div>
+                    <div class="stat-value"><?= isset($monthly_stats['late_days']) ? $monthly_stats['late_days'] : 0 ?></div>
                     <div class="stat-label">Late Arrivals</div>
                 </div>
             </div>
@@ -84,7 +84,7 @@
                     <i class="fas fa-hourglass-half"></i>
                 </div>
                 <div class="ml-3">
-                    <div class="stat-value"><?= isset($monthly_stats->total_hours) ? number_format($monthly_stats->total_hours, 1) : 0 ?></div>
+                    <div class="stat-value"><?= isset($monthly_stats['total_hours_worked']) ? number_format($monthly_stats['total_hours_worked'], 1) : 0 ?></div>
                     <div class="stat-label">Total Hours</div>
                 </div>
             </div>
@@ -183,25 +183,34 @@
                 <div class="row text-center">
                     <div class="col-md-3 col-6 mb-3 mb-md-0">
                         <div class="performance-metric">
-                            <span class="metric-value text-success"><?= isset($performance->attendance_rate) ? number_format($performance->attendance_rate, 1) : 0 ?>%</span>
+                            <span class="metric-value text-success"><?= isset($performance['attendance_rate']) ? number_format($performance['attendance_rate'], 1) : 0 ?>%</span>
                             <div class="metric-label">Attendance Rate</div>
                         </div>
                     </div>
                     <div class="col-md-3 col-6 mb-3 mb-md-0">
                         <div class="performance-metric">
-                            <span class="metric-value text-primary"><?= isset($performance->punctuality_rate) ? number_format($performance->punctuality_rate, 1) : 0 ?>%</span>
+                            <span class="metric-value text-primary"><?= isset($performance['punctuality_rate']) ? number_format($performance['punctuality_rate'], 1) : 0 ?>%</span>
                             <div class="metric-label">Punctuality Rate</div>
                         </div>
                     </div>
                     <div class="col-md-3 col-6">
                         <div class="performance-metric">
-                            <span class="metric-value text-warning"><?= isset($performance->complete_dtr_rate) ? number_format($performance->complete_dtr_rate, 1) : 0 ?>%</span>
+                            <span class="metric-value text-warning"><?= isset($performance['completion_rate']) ? number_format($performance['completion_rate'], 1) : 0 ?>%</span>
                             <div class="metric-label">Complete DTR Rate</div>
                         </div>
                     </div>
                     <div class="col-md-3 col-6">
                         <div class="performance-metric">
-                            <span class="metric-value text-dark"><?= isset($yearly_stats->total_days_present) ? $yearly_stats->total_days_present : 0 ?></span>
+                            <?php 
+                            // Calculate total days present from yearly stats
+                            $total_yearly_present = 0;
+                            if (isset($yearly_stats) && is_array($yearly_stats)) {
+                                foreach ($yearly_stats as $month_stat) {
+                                    $total_yearly_present += isset($month_stat['present_days']) ? $month_stat['present_days'] : 0;
+                                }
+                            }
+                            ?>
+                            <span class="metric-value text-dark"><?= $total_yearly_present ?></span>
                             <div class="metric-label">Days Present (Year)</div>
                         </div>
                     </div>

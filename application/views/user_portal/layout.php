@@ -292,29 +292,6 @@ $sys = $GLOBALS['_sys_cache'];
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= $this->uri->segment(2) == 'attendance_history' ? 'active' : '' ?>" href="<?= site_url('user/attendance_history') ?>">
-                        <i class="fas fa-history"></i> Attendance History
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link <?= $this->uri->segment(2) == 'profile' ? 'active' : '' ?>" href="<?= site_url('user/profile') ?>">
-                        <i class="fas fa-user"></i> My Profile
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link <?= $this->uri->segment(2) == 'change_password' ? 'active' : '' ?>" href="<?= site_url('user/change_password') ?>">
-                        <i class="fas fa-lock"></i> Change Password
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link <?= $this->uri->segment(2) == 'notifications' ? 'active' : '' ?>" href="<?= site_url('user/notifications') ?>">
-                        <i class="fas fa-bell"></i> Notifications
-                        <?php if (isset($unread_count) && $unread_count > 0): ?>
-                            <span class="badge badge-danger ml-2"><?= $unread_count ?></span>
-                        <?php endif; ?>
-                    </a>
-                </li>
-                <li class="nav-item">
                     <a class="nav-link <?= $this->uri->segment(2) == 'leave_applications' ? 'active' : '' ?>" href="<?= site_url('user/leave_applications') ?>">
                         <i class="fas fa-file-signature"></i> My Leave Applications
                     </a>
