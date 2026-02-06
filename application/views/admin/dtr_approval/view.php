@@ -33,6 +33,7 @@ foreach ($items as $date => $item_data) {
 .dtr-table .no-border { border: none; }
 .cell-repositioned { background: #fff3cd !important; font-weight: bold; }
 .cell-manual { background: #f8d7da !important; font-weight: bold; }
+.cell-clock-change { background: #a8d4ff !important; font-weight: bold; }
 </style>
 
 <div class="page-inner">
@@ -52,7 +53,8 @@ foreach ($items as $date => $item_data) {
                     </div>
                     <div class="mb-3">
                         <span class="badge badge-warning mr-2"><i class="fas fa-arrows-alt mr-1"></i>Repositioned (Yellow)</span>
-                        <span class="badge badge-danger"><i class="fas fa-edit mr-1"></i>Manual Entry (Red)</span>
+                        <span class="badge badge-danger mr-2"><i class="fas fa-edit mr-1"></i>Manual Entry (Red)</span>
+                        <span class="badge" style="background:#a8d4ff;color:#000;"><i class="fas fa-clock mr-1"></i>Clock Change (Blue)</span>
                     </div>
                     
                     <div class="dtr-copy" style="border: 2px solid black; padding: 15px; background: #fff;">
@@ -79,6 +81,9 @@ foreach ($items as $date => $item_data) {
                                 <tr><td></td><td>Arrival</td><td>Departure</td><td>Arrival</td><td>Departure</td><td>Hours</td><td>Minutes</td></tr>
                             </thead>
                             <tbody>
+                                <?php
+                                $cc_entries = isset($clock_change_entries) ? $clock_change_entries : [];
+                                ?>
                                 <?php for ($i = 1; $i <= $days_in_month; $i++):
                                     $date = $year . '-' . str_pad($month_num, 2, '0', STR_PAD_LEFT) . '-' . str_pad($i, 2, '0', STR_PAD_LEFT);
                                     $is_weekend = isWeekendAdminApproval($date);
@@ -97,7 +102,8 @@ foreach ($items as $date => $item_data) {
                                         $fields = ['morning_in' => 'am_in', 'morning_out' => 'am_out', 'afternoon_in' => 'pm_in', 'afternoon_out' => 'pm_out'];
                                         foreach ($fields as $field => $db_field):
                                             $change = isset($day_changes[$field]) ? $day_changes[$field] : null;
-                                            $cell_class = $change ? ($change->edit_type == 'repositioned' ? 'cell-repositioned' : 'cell-manual') : '';
+                                            $is_cc = isset($cc_entries[$date . '_' . $db_field]);
+                                            $cell_class = $change ? ($change->edit_type == 'repositioned' ? 'cell-repositioned' : 'cell-manual') : ($is_cc ? 'cell-clock-change' : '');
                                             $value = $change ? $change->new_value : (isset($record->$db_field) ? $record->$db_field : '');
                                     ?>
                                         <td class="<?= $cell_class ?>"><?= $value ? date('h:i', strtotime($value)) : '' ?></td>

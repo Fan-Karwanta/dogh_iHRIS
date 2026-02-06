@@ -52,8 +52,7 @@
                                 <label>Employment Type</label>
                                 <select class="form-control" name="employment_type" required>
                                     <option value="Regular">Regular</option>
-                                    <option value="Contract of Service">Contract of Service</option>
-                                    <option value="COS / JO">COS / JO</option>
+                                    <option value="COS">COS</option>
                                 </select>
                             </div>
                         </div>
@@ -136,8 +135,7 @@
                                 <label>Employment Type</label>
                                 <select class="form-control" name="employment_type" id="employment_type" required>
                                     <option value="Regular">Regular</option>
-                                    <option value="Contract of Service">Contract of Service</option>
-                                    <option value="COS / JO">COS / JO</option>
+                                    <option value="COS">COS</option>
                                 </select>
                             </div>
                         </div>

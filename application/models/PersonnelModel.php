@@ -128,6 +128,53 @@ class PersonnelModel extends CI_Model
         return $result ? $result->profile_image : null;
     }
 
+    /**
+     * Auto-create a user account for a personnel record
+     * Uses email as username and 'dogh_2026' as default password
+     */
+    public function auto_create_user_account($personnel_id, $email, $firstname = '', $lastname = '')
+    {
+        // Check if user account already exists for this personnel
+        $this->db->where('personnel_id', $personnel_id);
+        $existing = $this->db->get('user_accounts')->row();
+        if ($existing) {
+            return $existing->id;
+        }
+
+        // Also check if email already exists in user_accounts
+        $this->db->where('email', $email);
+        $existing_email = $this->db->get('user_accounts')->row();
+        if ($existing_email) {
+            return $existing_email->id;
+        }
+
+        // Generate username from email (part before @)
+        $username = strstr($email, '@', true);
+        // Ensure username is unique
+        $base_username = $username;
+        $counter = 1;
+        while (true) {
+            $this->db->where('username', $username);
+            $check = $this->db->get('user_accounts')->row();
+            if (!$check) break;
+            $username = $base_username . $counter;
+            $counter++;
+        }
+
+        $account_data = array(
+            'personnel_id' => $personnel_id,
+            'username' => $username,
+            'password' => password_hash('dogh_2026', PASSWORD_BCRYPT),
+            'email' => $email,
+            'status' => 'approved',
+            'approved_at' => date('Y-m-d H:i:s'),
+            'created_at' => date('Y-m-d H:i:s')
+        );
+
+        $this->db->insert('user_accounts', $account_data);
+        return $this->db->insert_id();
+    }
+
     public function delete_profile_image($personnel_id)
     {
         $image_filename = $this->get_profile_image($personnel_id);

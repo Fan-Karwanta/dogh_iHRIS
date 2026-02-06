@@ -277,8 +277,7 @@ $sys = $this->db->get('systems')->row();
                             <select class="form-control" id="employment_type" name="employment_type" required>
                                 <option value="">Select Type</option>
                                 <option value="Regular" <?= set_select('employment_type', 'Regular') ?>>Regular</option>
-                                <option value="Contract of Service" <?= set_select('employment_type', 'Contract of Service') ?>>Contract of Service</option>
-                                <option value="COS / JO" <?= set_select('employment_type', 'COS / JO') ?>>COS / JO</option>
+                                <option value="COS" <?= set_select('employment_type', 'COS') ?>>COS</option>
                             </select>
                         </div>
                     </div>

@@ -16,6 +16,7 @@ class PersonnelDtrEdit extends CI_Controller
         $this->load->model('BiometricsModel', 'biometricsModel');
         $this->load->model('DtrEditRequestModel', 'dtrEditModel');
         $this->load->model('HierarchyApprovalModel', 'hierarchyModel');
+        $this->load->model('ClockChangeRequestModel', 'clockChangeModel');
 
         if (!$this->session->userdata('user_logged_in')) {
             redirect('userauth/login');
@@ -53,6 +54,13 @@ class PersonnelDtrEdit extends CI_Controller
             $this->data['dtr_data'] = $this->db->get()->result();
 
             $this->data['has_pending_request'] = $this->dtrEditModel->has_pending_request($personnel_id, $selected_month);
+
+            // Get clock change embedded entries for highlighting
+            $this->data['clock_change_entries'] = $this->clockChangeModel->get_embedded_entries($personnel->bio_id, $selected_month);
+        }
+
+        if (!isset($this->data['clock_change_entries'])) {
+            $this->data['clock_change_entries'] = [];
         }
 
         $this->data['my_requests'] = $this->dtrEditModel->get_requests_by_personnel($personnel_id);
@@ -175,6 +183,25 @@ class PersonnelDtrEdit extends CI_Controller
                 'new_value' => $new_value,
                 'edit_type' => $edit_type
             ]);
+        }
+
+        // Notify approver(s) about the new DTR edit request
+        $this->load->model('UserAccountModel', 'userAccountModel');
+        $approvers = $this->hierarchyModel->get_approvers_for_personnel($personnel_id);
+        $requester_name = $personnel->lastname . ', ' . $personnel->firstname;
+        $month_label = date('F Y', strtotime($month . '-01'));
+        foreach ($approvers as $approver) {
+            // Find user_account_id for this approver
+            $this->db->where('personnel_id', $approver->personnel_id);
+            $approver_account = $this->db->get('user_accounts')->row();
+            if ($approver_account) {
+                $this->userAccountModel->add_notification(
+                    $approver_account->id,
+                    'New DTR Edit Request',
+                    $requester_name . ' submitted a DTR edit request for ' . $month_label . '. Please review and take action.',
+                    'info'
+                );
+            }
         }
 
         echo json_encode([

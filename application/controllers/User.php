@@ -321,6 +321,21 @@ class User extends CI_Controller
     }
 
     /**
+     * Mark all notifications as read
+     */
+    public function mark_all_notifications_read()
+    {
+        $user_id = $this->session->userdata('user_account_id');
+        $this->userAccountModel->mark_all_notifications_read($user_id);
+        
+        if ($this->input->is_ajax_request()) {
+            echo json_encode(array('success' => true));
+        } else {
+            redirect('user/notifications');
+        }
+    }
+
+    /**
      * Attendance history
      */
     public function attendance_history()
@@ -442,6 +457,18 @@ class User extends CI_Controller
             // Create new
             $leave_id = $this->leaveModel->create($data);
             if ($submit_type == 'submit') {
+                // Notify all admin user accounts about the new leave application
+                $employee_name = $personnel->lastname . ', ' . $personnel->firstname;
+                $this->db->query("
+                    INSERT INTO user_notifications (user_account_id, title, message, type)
+                    SELECT ua.id, 'New Leave Application', 
+                           '{$this->db->escape_str($employee_name)} submitted a new leave application for review.',
+                           'info'
+                    FROM user_accounts ua
+                    INNER JOIN users u ON u.email = ua.email
+                    INNER JOIN users_groups ug ON ug.user_id = u.id
+                    INNER JOIN groups g ON g.id = ug.group_id AND g.name = 'admin'
+                ");
                 $this->session->set_flashdata('success', 'Leave application submitted successfully.');
             } else {
                 $this->session->set_flashdata('success', 'Leave application saved as draft.');
@@ -578,5 +605,22 @@ class User extends CI_Controller
         $data['leave'] = $leave;
         
         $this->load->view('leave/print_form', $data);
+    }
+
+    /**
+     * View-only Hierarchy Chart for employees
+     */
+    public function hierarchy()
+    {
+        $this->data['title'] = 'Hierarchy Chart';
+
+        $this->load->model('HierarchyApprovalModel', 'hierarchyModel');
+        $this->hierarchyModel->ensure_table_exists();
+
+        $this->data['tree'] = $this->hierarchyModel->get_tree_structure();
+
+        $this->load->view('user_portal/layout', array_merge($this->data, [
+            'content' => $this->load->view('user_portal/hierarchy', $this->data, true)
+        ]));
     }
 }

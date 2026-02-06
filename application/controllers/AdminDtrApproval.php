@@ -10,6 +10,9 @@ class AdminDtrApproval extends CI_Controller
         $this->load->library(['ion_auth', 'session']);
         $this->load->helper(['url']);
         $this->load->model('DtrEditRequestModel', 'dtrEditModel');
+        $this->load->model('UserAccountModel', 'userAccountModel');
+        $this->load->model('PersonnelModel', 'personnelModel');
+        $this->load->model('ClockChangeRequestModel', 'clockChangeModel');
 
         if (!$this->ion_auth->logged_in()) {
             redirect('auth/login', 'refresh');
@@ -47,6 +50,9 @@ class AdminDtrApproval extends CI_Controller
         $this->db->order_by('date', 'ASC');
         $data['dtr_data'] = $this->db->get('biometrics')->result();
         $data['selected_month'] = $month;
+
+        // Get clock change embedded entries for blue highlighting
+        $data['clock_change_entries'] = $this->clockChangeModel->get_embedded_entries($personnel->bio_id, $month);
         
         $this->base->load('default', 'admin/dtr_approval/view', $data);
     }
@@ -55,7 +61,21 @@ class AdminDtrApproval extends CI_Controller
     {
         $admin_id = $this->ion_auth->user()->row()->id;
         $remarks = $this->input->post('remarks');
+        $request = $this->dtrEditModel->get_request($id);
         $this->dtrEditModel->approve_request($id, $admin_id, true, $remarks);
+
+        // Notify the employee
+        if ($request) {
+            $this->db->where('personnel_id', $request->personnel_id);
+            $requester_account = $this->db->get('user_accounts')->row();
+            if ($requester_account) {
+                $month_label = date('F Y', strtotime($request->request_month . '-01'));
+                $msg = 'Your DTR edit request for ' . $month_label . ' has been approved by the Administrator.';
+                if ($remarks) $msg .= ' Remarks: ' . $remarks;
+                $this->userAccountModel->add_notification($requester_account->id, 'DTR Edit Request Approved', $msg, 'success');
+            }
+        }
+
         $this->session->set_flashdata('success', 'Request approved');
         redirect('admindtrapproval');
     }
@@ -64,7 +84,21 @@ class AdminDtrApproval extends CI_Controller
     {
         $admin_id = $this->ion_auth->user()->row()->id;
         $remarks = $this->input->post('remarks');
+        $request = $this->dtrEditModel->get_request($id);
         $this->dtrEditModel->reject_request($id, $admin_id, true, $remarks);
+
+        // Notify the employee
+        if ($request) {
+            $this->db->where('personnel_id', $request->personnel_id);
+            $requester_account = $this->db->get('user_accounts')->row();
+            if ($requester_account) {
+                $month_label = date('F Y', strtotime($request->request_month . '-01'));
+                $msg = 'Your DTR edit request for ' . $month_label . ' has been rejected by the Administrator.';
+                if ($remarks) $msg .= ' Reason: ' . $remarks;
+                $this->userAccountModel->add_notification($requester_account->id, 'DTR Edit Request Rejected', $msg, 'danger');
+            }
+        }
+
         $this->session->set_flashdata('success', 'Request rejected');
         redirect('admindtrapproval');
     }

@@ -337,6 +337,19 @@ class UserAccountModel extends CI_Model
     }
 
     /**
+     * Mark all notifications as read for a user
+     */
+    public function mark_all_notifications_read($user_account_id)
+    {
+        $this->db->where('user_account_id', $user_account_id);
+        $this->db->where('is_read', 0);
+        return $this->db->update('user_notifications', array(
+            'is_read' => 1,
+            'read_at' => date('Y-m-d H:i:s')
+        ));
+    }
+
+    /**
      * Get unread notification count
      */
     public function get_unread_notification_count($user_account_id)

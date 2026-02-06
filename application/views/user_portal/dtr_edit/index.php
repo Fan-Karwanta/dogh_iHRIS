@@ -94,6 +94,10 @@ function isHolidayEdit($date, $holidayModel) {
     background: #f8d7da !important;
     font-weight: bold;
 }
+.cell-clock-change {
+    background: #d4eaff !important;
+    font-weight: bold;
+}
 
 /* Label cells (LEAVE, OB, etc.) */
 .editable-label {
@@ -200,7 +204,8 @@ function isHolidayEdit($date, $holidayModel) {
     </div>
     <div>
         <span class="badge badge-warning mr-2"><i class="fas fa-arrows-alt mr-1"></i>Repositioned (Yellow)</span>
-        <span class="badge badge-danger"><i class="fas fa-keyboard mr-1"></i>Manual Entry (Red)</span>
+        <span class="badge badge-danger mr-2"><i class="fas fa-keyboard mr-1"></i>Manual Entry (Red)</span>
+        <span class="badge" style="background:#d4eaff;color:#000;"><i class="fas fa-clock mr-1"></i>Clock Change (Light Blue)</span>
     </div>
 </div>
 
@@ -268,12 +273,19 @@ function isHolidayEdit($date, $holidayModel) {
                                 </tr>
                             </thead>
                             <tbody>
+                                <?php
+                                $cc_entries = isset($clock_change_entries) ? $clock_change_entries : [];
+                                ?>
                                 <?php for ($i = 1; $i <= $days_in_month; $i++):
                                     $date = $year . '-' . str_pad($month_num, 2, '0', STR_PAD_LEFT) . '-' . str_pad($i, 2, '0', STR_PAD_LEFT);
                                     $is_weekend = isWeekendEdit($date);
                                     $is_holiday = isHolidayEdit($date, $this->holidayModel);
                                     $record = isset($dtr_by_date[$date]) ? $dtr_by_date[$date] : null;
                                     $has_entries = $record && (!empty($record->am_in) || !empty($record->am_out) || !empty($record->pm_in) || !empty($record->pm_out));
+                                    $cc_am_in = isset($cc_entries[$date . '_am_in']);
+                                    $cc_am_out = isset($cc_entries[$date . '_am_out']);
+                                    $cc_pm_in = isset($cc_entries[$date . '_pm_in']);
+                                    $cc_pm_out = isset($cc_entries[$date . '_pm_out']);
                                 ?>
                                 <tr data-date="<?= $date ?>">
                                     <td><?= $i ?></td>
@@ -282,16 +294,16 @@ function isHolidayEdit($date, $holidayModel) {
                                             <strong><?= $is_holiday ? 'HOLIDAY' : getWeekendLabelEdit($date) ?></strong>
                                         </td>
                                     <?php else: ?>
-                                        <td class="editable-cell <?= !empty($record->am_in) ? 'has-data' : '' ?>" data-field="morning_in" data-original="<?= $record->am_in ?? '' ?>" data-original-source="<?= !empty($record->am_in) ? 'biometric' : '' ?>">
+                                        <td class="editable-cell <?= !empty($record->am_in) ? 'has-data' : '' ?> <?= $cc_am_in ? 'cell-clock-change' : '' ?>" data-field="morning_in" data-original="<?= $record->am_in ?? '' ?>" data-original-source="<?= !empty($record->am_in) ? 'biometric' : '' ?>">
                                             <?= !empty($record->am_in) ? date('h:i', strtotime($record->am_in)) : '' ?>
                                         </td>
-                                        <td class="editable-cell <?= !empty($record->am_out) ? 'has-data' : '' ?>" data-field="morning_out" data-original="<?= $record->am_out ?? '' ?>" data-original-source="<?= !empty($record->am_out) ? 'biometric' : '' ?>">
+                                        <td class="editable-cell <?= !empty($record->am_out) ? 'has-data' : '' ?> <?= $cc_am_out ? 'cell-clock-change' : '' ?>" data-field="morning_out" data-original="<?= $record->am_out ?? '' ?>" data-original-source="<?= !empty($record->am_out) ? 'biometric' : '' ?>">
                                             <?= !empty($record->am_out) ? date('h:i', strtotime($record->am_out)) : '' ?>
                                         </td>
-                                        <td class="editable-cell <?= !empty($record->pm_in) ? 'has-data' : '' ?>" data-field="afternoon_in" data-original="<?= $record->pm_in ?? '' ?>" data-original-source="<?= !empty($record->pm_in) ? 'biometric' : '' ?>">
+                                        <td class="editable-cell <?= !empty($record->pm_in) ? 'has-data' : '' ?> <?= $cc_pm_in ? 'cell-clock-change' : '' ?>" data-field="afternoon_in" data-original="<?= $record->pm_in ?? '' ?>" data-original-source="<?= !empty($record->pm_in) ? 'biometric' : '' ?>">
                                             <?= !empty($record->pm_in) ? date('h:i', strtotime($record->pm_in)) : '' ?>
                                         </td>
-                                        <td class="editable-cell <?= !empty($record->pm_out) ? 'has-data' : '' ?>" data-field="afternoon_out" data-original="<?= $record->pm_out ?? '' ?>" data-original-source="<?= !empty($record->pm_out) ? 'biometric' : '' ?>">
+                                        <td class="editable-cell <?= !empty($record->pm_out) ? 'has-data' : '' ?> <?= $cc_pm_out ? 'cell-clock-change' : '' ?>" data-field="afternoon_out" data-original="<?= $record->pm_out ?? '' ?>" data-original-source="<?= !empty($record->pm_out) ? 'biometric' : '' ?>">
                                             <?= !empty($record->pm_out) ? date('h:i', strtotime($record->pm_out)) : '' ?>
                                         </td>
                                         <td class="editable-cell" data-field="undertime_hours" data-original="<?= $record->undertime_hours ?? '' ?>" data-original-source="<?= isset($record->undertime_hours) && $record->undertime_hours !== '' ? 'biometric' : '' ?>">

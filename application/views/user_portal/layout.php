@@ -5,6 +5,19 @@ if (!isset($GLOBALS['_sys_cache'])) {
     $GLOBALS['_sys_cache'] = $query->row();
 }
 $sys = $GLOBALS['_sys_cache'];
+
+// Check if current user is an approver (has subordinates in hierarchy)
+$is_approver = false;
+$_CI =& get_instance();
+$_personnel_id = $_CI->session->userdata('user_personnel_id');
+if ($_personnel_id) {
+    if (!isset($GLOBALS['_is_approver_cache'])) {
+        $_CI->load->model('HierarchyApprovalModel', 'hierarchyModel_layout');
+        $approvees = $_CI->hierarchyModel_layout->get_approvees_for_personnel($_personnel_id);
+        $GLOBALS['_is_approver_cache'] = !empty($approvees);
+    }
+    $is_approver = $GLOBALS['_is_approver_cache'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -274,7 +287,7 @@ $sys = $GLOBALS['_sys_cache'];
     <!-- Sidebar -->
     <div class="user-sidebar">
         <div class="logo">
-            <img src="<?= base_url('assets/img/logo.png') ?>" alt="<?= $sys->system_name ?>">
+            <img src="<?= base_url('assets/img/dogh_logo.png') ?>" alt="<?= $sys->system_name ?>">
             <h4><?= $sys->system_acronym ?></h4>
             <small>Employee Portal</small>
         </div>
@@ -282,7 +295,7 @@ $sys = $GLOBALS['_sys_cache'];
         <nav class="nav-menu">
             <ul class="nav flex-column">
                 <li class="nav-item">
-                    <a class="nav-link <?= $this->uri->segment(2) == 'dashboard' || $this->uri->segment(2) == '' ? 'active' : '' ?>" href="<?= site_url('user/dashboard') ?>">
+                    <a class="nav-link <?= $this->uri->segment(1) == 'user' && ($this->uri->segment(2) == 'dashboard' || $this->uri->segment(2) == '') ? 'active' : '' ?>" href="<?= site_url('user/dashboard') ?>">
                         <i class="fas fa-home"></i> Dashboard
                     </a>
                 </li>
@@ -301,9 +314,36 @@ $sys = $GLOBALS['_sys_cache'];
                         <i class="fas fa-edit"></i> Edit My DTR
                     </a>
                 </li>
+                <?php if ($is_approver): ?>
                 <li class="nav-item">
                     <a class="nav-link <?= $this->uri->segment(1) == 'dtrapproval' ? 'active' : '' ?>" href="<?= site_url('dtrapproval') ?>">
                         <i class="fas fa-check-double"></i> DTR Approvals
+                    </a>
+                </li>
+                <?php endif; ?>
+                <li class="nav-item">
+                    <a class="nav-link <?= $this->uri->segment(1) == 'clockchangerequest' ? 'active' : '' ?>" href="<?= site_url('clockchangerequest') ?>">
+                        <i class="fas fa-clipboard-list"></i> Forgot Clock In/Out
+                    </a>
+                </li>
+                <?php if ($is_approver): ?>
+                <li class="nav-item">
+                    <a class="nav-link <?= $this->uri->segment(1) == 'clockchangeapproval' ? 'active' : '' ?>" href="<?= site_url('clockchangeapproval') ?>">
+                        <i class="fas fa-user-check"></i> Clock Change Approvals
+                    </a>
+                </li>
+                <?php endif; ?>
+                <li class="nav-item">
+                    <a class="nav-link <?= $this->uri->segment(2) == 'hierarchy' ? 'active' : '' ?>" href="<?= site_url('user/hierarchy') ?>">
+                        <i class="fas fa-sitemap"></i> Hierarchy Chart
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?= $this->uri->segment(2) == 'notifications' ? 'active' : '' ?>" href="<?= site_url('user/notifications') ?>">
+                        <i class="fas fa-bell"></i> Notifications
+                        <?php if (isset($unread_count) && $unread_count > 0): ?>
+                            <span class="badge badge-danger ml-auto" style="font-size: 10px; padding: 3px 7px; border-radius: 10px;"><?= $unread_count ?></span>
+                        <?php endif; ?>
                     </a>
                 </li>
             </ul>

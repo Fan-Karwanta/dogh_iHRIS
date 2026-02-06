@@ -121,8 +121,17 @@ class Personnel extends CI_Controller
             $insert =  $this->personnelModel->create_personnel($data);
 
             if ($insert) {
+                // Auto-create user account for the new personnel
+                $personnel_id = $this->db->insert_id();
+                $this->personnelModel->auto_create_user_account(
+                    $personnel_id,
+                    $data['email'],
+                    $data['firstname'],
+                    $data['lastname']
+                );
+
                 $this->session->set_flashdata('success', 'success');
-                $this->session->set_flashdata('message', 'Personnel has been created!');
+                $this->session->set_flashdata('message', 'Personnel has been created and user account has been automatically generated!');
             } else {
                 $this->session->set_flashdata('message', 'Something went wrong please try again');
             }
@@ -289,9 +298,11 @@ class Personnel extends CI_Controller
                             // Parse timestamp
                             $timestamp = !empty($filedata[0]) ? date('Y-m-d H:i:s', strtotime($filedata[0])) : null;
                             
-                            // Parse employment type
+                            // Parse employment type - normalize to 'Regular' or 'COS'
                             $employment_type = trim($filedata[6]);
-                            if (!in_array($employment_type, ['Regular', 'Contract of Service', 'COS / JO'])) {
+                            if (in_array($employment_type, ['Contract of Service', 'COS / JO', 'COS'])) {
+                                $employment_type = 'COS';
+                            } elseif ($employment_type !== 'Regular') {
                                 $employment_type = 'Regular'; // Default value
                             }
                             
@@ -343,8 +354,25 @@ class Personnel extends CI_Controller
                     
                     $count = $this->personnelModel->create_personnel_batch($personnel_data);
                     
+                    // Auto-create user accounts for all imported personnel
+                    $accounts_created = 0;
+                    foreach ($personnel_data as $pdata) {
+                        // Find the personnel record by email to get the ID
+                        $this->db->where('email', $pdata['email']);
+                        $person = $this->db->get('personnels')->row();
+                        if ($person) {
+                            $result = $this->personnelModel->auto_create_user_account(
+                                $person->id,
+                                $pdata['email'],
+                                $pdata['firstname'],
+                                $pdata['lastname']
+                            );
+                            if ($result) $accounts_created++;
+                        }
+                    }
+                    
                     // Build success message with duplicate info if any
-                    $message = "Successfully imported $count personnel records!";
+                    $message = "Successfully imported $count personnel records! ($accounts_created user accounts created)";
                     if (!empty($duplicates)) {
                         $message .= "\n\nSkipped " . count($duplicates) . " duplicate(s):\n" . implode("\n", $duplicates);
                     }

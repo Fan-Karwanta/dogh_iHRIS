@@ -223,19 +223,14 @@ $sys = $GLOBALS['_sys_cache'];
                             <p>DTR Edit Requests</p>
                         </a>
                     </li>
-                    <li class="nav-item <?= $current_page == 'users' || ($current_controller == 'settings' && ($current_page == 'departments' || $current_page == 'holidays')) ? 'active' : null ?>">
+                    <li class="nav-item <?= ($current_controller == 'settings' && ($current_page == 'departments' || $current_page == 'holidays')) ? 'active' : null ?>">
                         <a data-toggle="collapse" href="#settings">
                             <i class="fas fa-cogs"></i>
                             <p>Settings</p>
                             <span class="caret"></span>
                         </a>
-                        <div class="collapse <?= $current_page == 'users' || ($current_controller == 'settings' && ($current_page == 'departments' || $current_page == 'holidays')) ? 'show' : null ?>" id="settings">
+                        <div class="collapse <?= ($current_controller == 'settings' && ($current_page == 'departments' || $current_page == 'holidays')) ? 'show' : null ?>" id="settings">
                             <ul class="nav nav-collapse">
-                                <li class="<?= $current_page == 'users' ? 'active' : null ?>">
-                                    <a href="<?= site_url('admin/users') ?>">
-                                        <span class="sub-item">Users</span>
-                                    </a>
-                                </li>
                                 <li class="<?= ($current_controller == 'settings' && $current_page == 'departments') ? 'active' : null ?>">
                                     <a href="<?= site_url('settings/departments') ?>">
                                         <span class="sub-item">Departments</span>

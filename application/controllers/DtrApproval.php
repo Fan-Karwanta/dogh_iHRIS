@@ -15,6 +15,7 @@ class DtrApproval extends CI_Controller
         $this->load->model('PersonnelModel', 'personnelModel');
         $this->load->model('DtrEditRequestModel', 'dtrEditModel');
         $this->load->model('HierarchyApprovalModel', 'hierarchyModel');
+        $this->load->model('ClockChangeRequestModel', 'clockChangeModel');
 
         if (!$this->session->userdata('user_logged_in')) {
             redirect('userauth/login');
@@ -71,6 +72,9 @@ class DtrApproval extends CI_Controller
         $this->db->order_by('date', 'ASC');
         $this->data['dtr_data'] = $this->db->get('biometrics')->result();
         $this->data['selected_month'] = $month;
+
+        // Get clock change embedded entries for blue highlighting
+        $this->data['clock_change_entries'] = $this->clockChangeModel->get_embedded_entries($personnel->bio_id, $month);
         
         $this->data['content'] = $this->load->view('user_portal/dtr_approval/view', $this->data, TRUE);
         $this->load->view('user_portal/layout', $this->data);
@@ -96,6 +100,19 @@ class DtrApproval extends CI_Controller
         }
 
         $this->dtrEditModel->approve_request($id, $personnel_id, false, $remarks);
+
+        // Notify the employee that their request was approved
+        $this->db->where('personnel_id', $request->personnel_id);
+        $requester_account = $this->db->get('user_accounts')->row();
+        if ($requester_account) {
+            $approver = $this->personnelModel->getpersonnel($personnel_id);
+            $approver_name = $approver ? $approver->lastname . ', ' . $approver->firstname : 'Your approver';
+            $month_label = date('F Y', strtotime($request->request_month . '-01'));
+            $msg = 'Your DTR edit request for ' . $month_label . ' has been approved by ' . $approver_name . '.';
+            if ($remarks) $msg .= ' Remarks: ' . $remarks;
+            $this->userAccountModel->add_notification($requester_account->id, 'DTR Edit Request Approved', $msg, 'success');
+        }
+
         $this->session->set_flashdata('success', 'Request approved successfully');
         redirect('dtrapproval');
     }
@@ -120,6 +137,19 @@ class DtrApproval extends CI_Controller
         }
 
         $this->dtrEditModel->reject_request($id, $personnel_id, false, $remarks);
+
+        // Notify the employee that their request was rejected
+        $this->db->where('personnel_id', $request->personnel_id);
+        $requester_account = $this->db->get('user_accounts')->row();
+        if ($requester_account) {
+            $approver = $this->personnelModel->getpersonnel($personnel_id);
+            $approver_name = $approver ? $approver->lastname . ', ' . $approver->firstname : 'Your approver';
+            $month_label = date('F Y', strtotime($request->request_month . '-01'));
+            $msg = 'Your DTR edit request for ' . $month_label . ' has been rejected by ' . $approver_name . '.';
+            if ($remarks) $msg .= ' Reason: ' . $remarks;
+            $this->userAccountModel->add_notification($requester_account->id, 'DTR Edit Request Rejected', $msg, 'danger');
+        }
+
         $this->session->set_flashdata('success', 'Request rejected');
         redirect('dtrapproval');
     }

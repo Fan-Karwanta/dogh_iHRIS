@@ -20,6 +20,8 @@ $route['user/update_profile'] = 'user/update_profile';
 $route['user/change_password'] = 'user/change_password';
 $route['user/notifications'] = 'user/notifications';
 $route['user/mark_notification_read/(:num)'] = 'user/mark_notification_read/$1';
+$route['user/mark_all_notifications_read'] = 'user/mark_all_notifications_read';
+$route['user/hierarchy'] = 'user/hierarchy';
 $route['user/attendance_history'] = 'user/attendance_history';
 
 // User Leave Application Routes
@@ -100,6 +102,27 @@ $route['reports/schedule_compliance/get_department_summary'] = 'AttendanceCompli
 $route['reports/schedule_compliance/get_overall_stats'] = 'AttendanceCompliance/get_overall_stats';
 $route['reports/schedule_compliance/export_csv'] = 'AttendanceCompliance/export_csv';
 $route['reports/schedule_compliance/print_report'] = 'AttendanceCompliance/print_report';
+
+// Failure to Clock / Time Changes Routes (Employee)
+$route['clockchangerequest'] = 'ClockChangeRequest/index';
+$route['clockchangerequest/create'] = 'ClockChangeRequest/create';
+$route['clockchangerequest/save'] = 'ClockChangeRequest/save';
+$route['clockchangerequest/view/(:num)'] = 'ClockChangeRequest/view/$1';
+$route['clockchangerequest/print_request/(:num)'] = 'ClockChangeRequest/print_request/$1';
+$route['clockchangerequest/cancel/(:num)'] = 'ClockChangeRequest/cancel/$1';
+
+// Failure to Clock / Time Changes Approval Routes (Approver)
+$route['clockchangeapproval'] = 'ClockChangeApproval/index';
+$route['clockchangeapproval/view/(:num)'] = 'ClockChangeApproval/view/$1';
+$route['clockchangeapproval/approve/(:num)'] = 'ClockChangeApproval/approve/$1';
+$route['clockchangeapproval/reject/(:num)'] = 'ClockChangeApproval/reject/$1';
+$route['clockchangeapproval/print_request/(:num)'] = 'ClockChangeApproval/print_request/$1';
+
+// Admin Clock Change Approval Routes
+$route['adminclockchangeapproval'] = 'AdminClockChangeApproval/index';
+$route['adminclockchangeapproval/view/(:num)'] = 'AdminClockChangeApproval/view/$1';
+$route['adminclockchangeapproval/approve/(:num)'] = 'AdminClockChangeApproval/approve/$1';
+$route['adminclockchangeapproval/reject/(:num)'] = 'AdminClockChangeApproval/reject/$1';
 
 // Bulk Print Complete Schedule Personnel Routes
 $route['reports/schedule_compliance/bulk_print_complete'] = 'AttendanceCompliance/bulk_print_complete';

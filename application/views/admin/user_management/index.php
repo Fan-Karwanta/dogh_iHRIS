@@ -114,7 +114,7 @@
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table table-hover">
+                            <table class="table table-hover" id="pendingUsersTable">
                                 <thead>
                                     <tr>
                                         <th>Photo</th>
@@ -263,7 +263,7 @@
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table table-hover">
+                            <table class="table table-hover" id="blockedUsersTable">
                                 <thead>
                                     <tr>
                                         <th>Name</th>
@@ -447,9 +447,23 @@ function deleteUser(id) {
 }
 
 $(document).ready(function() {
-    $('#approvedUsersTable').DataTable({
+    var dtOptions = {
         "pageLength": 10,
-        "order": [[1, "asc"]]
-    });
+        "order": [[1, "asc"]],
+        "language": {
+            "search": "Search:",
+            "lengthMenu": "Show _MENU_ entries",
+            "info": "Showing _START_ to _END_ of _TOTAL_ users",
+            "emptyTable": "No users found"
+        },
+        "dom": '<"d-flex justify-content-between align-items-center mb-3"lf>rtip'
+    };
+    $('#approvedUsersTable').DataTable(dtOptions);
+    $('#pendingUsersTable').DataTable($.extend({}, dtOptions, {
+        "order": [[5, "desc"]]
+    }));
+    $('#blockedUsersTable').DataTable($.extend({}, dtOptions, {
+        "order": [[0, "asc"]]
+    }));
 });
 </script>

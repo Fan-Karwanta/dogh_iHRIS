@@ -110,8 +110,7 @@
                                         <label>Employment Type</label>
                                         <select class="form-control" name="employment_type">
                                             <option value="Regular" <?= $user->employment_type == 'Regular' ? 'selected' : '' ?>>Regular</option>
-                                            <option value="Contract of Service" <?= $user->employment_type == 'Contract of Service' ? 'selected' : '' ?>>Contract of Service</option>
-                                            <option value="COS / JO" <?= $user->employment_type == 'COS / JO' ? 'selected' : '' ?>>COS / JO</option>
+                                            <option value="COS" <?= ($user->employment_type == 'COS' || $user->employment_type == 'Contract of Service' || $user->employment_type == 'COS / JO') ? 'selected' : '' ?>>COS</option>
                                         </select>
                                     </div>
                                 </div>

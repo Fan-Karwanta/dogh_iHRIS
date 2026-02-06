@@ -2,14 +2,32 @@
 <div class="card-custom">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0"><i class="fas fa-bell mr-2 text-primary"></i>All Notifications</h5>
-        <span class="badge badge-primary"><?= count($all_notifications) ?> total</span>
+        <div>
+            <span class="badge badge-primary mr-2"><?= count($all_notifications) ?> total</span>
+            <?php
+            $unread_total = 0;
+            foreach ($all_notifications as $n) { if (!$n->is_read) $unread_total++; }
+            if ($unread_total > 0): ?>
+                <a href="<?= site_url('user/mark_all_notifications_read') ?>" class="btn btn-sm btn-outline-success">
+                    <i class="fas fa-check-double mr-1"></i> Mark All Read (<?= $unread_total ?>)
+                </a>
+            <?php endif; ?>
+        </div>
     </div>
     <div class="card-body p-0">
         <div class="notification-list">
             <?php foreach ($all_notifications as $notif): ?>
                 <div class="notification-item <?= $notif->is_read ? '' : 'unread' ?>" data-id="<?= $notif->id ?>">
-                    <div class="notification-icon <?= $notif->is_read ? 'read' : '' ?>">
-                        <i class="fas fa-<?= $notif->type == 'approval' ? 'check-circle' : ($notif->type == 'warning' ? 'exclamation-triangle' : 'info-circle') ?>"></i>
+                    <?php
+                    $icon_class = 'fa-info-circle';
+                    $icon_bg = '';
+                    if ($notif->type == 'success') { $icon_class = 'fa-check-circle'; $icon_bg = 'background: linear-gradient(135deg, #31ce36 0%, #1b8e20 100%);'; }
+                    elseif ($notif->type == 'danger') { $icon_class = 'fa-times-circle'; $icon_bg = 'background: linear-gradient(135deg, #f25961 0%, #d32f2f 100%);'; }
+                    elseif ($notif->type == 'warning') { $icon_class = 'fa-exclamation-triangle'; $icon_bg = 'background: linear-gradient(135deg, #ffad46 0%, #f5a623 100%);'; }
+                    else { $icon_bg = 'background: linear-gradient(135deg, #1572e8 0%, #0d47a1 100%);'; }
+                    ?>
+                    <div class="notification-icon <?= $notif->is_read ? 'read' : '' ?>" <?= !$notif->is_read ? 'style="' . $icon_bg . '"' : '' ?>>
+                        <i class="fas <?= $icon_class ?>"></i>
                     </div>
                     <div class="notification-content">
                         <h6 class="notification-title"><?= htmlspecialchars($notif->title) ?></h6>

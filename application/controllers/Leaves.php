@@ -8,6 +8,7 @@ class Leaves extends CI_Controller
         parent::__construct();
         $this->load->model('LeaveModel', 'leaveModel');
         $this->load->model('PersonnelModel', 'personnelModel');
+        $this->load->model('UserAccountModel', 'userAccountModel');
         
         // Check if user is admin
         if (!$this->ion_auth->logged_in()) {
@@ -141,6 +142,8 @@ class Leaves extends CI_Controller
         );
         
         if ($this->leaveModel->certify($id, $certification_data, $user->id)) {
+            // Notify employee
+            $this->_notify_employee($leave->personnel_id, 'Leave Application Certified', 'Your leave application has been certified by HR. It is now pending recommendation.', 'info');
             $this->session->set_flashdata('success', 'Leave credits certified successfully.');
         } else {
             $this->session->set_flashdata('error', 'Failed to certify leave credits.');
@@ -171,6 +174,13 @@ class Leaves extends CI_Controller
         $reason = $this->input->post('disapproval_reason');
         
         if ($this->leaveModel->recommend($id, $recommendation, $reason, $user->id)) {
+            if ($recommendation === 'approve') {
+                $this->_notify_employee($leave->personnel_id, 'Leave Application Recommended', 'Your leave application has been recommended for approval.', 'info');
+            } else {
+                $msg = 'Your leave application was not recommended.';
+                if ($reason) $msg .= ' Reason: ' . $reason;
+                $this->_notify_employee($leave->personnel_id, 'Leave Application Not Recommended', $msg, 'warning');
+            }
             $this->session->set_flashdata('success', 'Recommendation submitted successfully.');
         } else {
             $this->session->set_flashdata('error', 'Failed to submit recommendation.');
@@ -205,6 +215,7 @@ class Leaves extends CI_Controller
         );
         
         if ($this->leaveModel->approve($id, $approval_data, $user->id)) {
+            $this->_notify_employee($leave->personnel_id, 'Leave Application Approved', 'Your leave application has been approved.', 'success');
             $this->session->set_flashdata('success', 'Leave application approved successfully.');
         } else {
             $this->session->set_flashdata('error', 'Failed to approve leave application.');
@@ -239,6 +250,9 @@ class Leaves extends CI_Controller
         }
         
         if ($this->leaveModel->disapprove($id, $reason, $user->id)) {
+            $msg = 'Your leave application has been disapproved.';
+            if ($reason) $msg .= ' Reason: ' . $reason;
+            $this->_notify_employee($leave->personnel_id, 'Leave Application Disapproved', $msg, 'danger');
             $this->session->set_flashdata('success', 'Leave application disapproved.');
         } else {
             $this->session->set_flashdata('error', 'Failed to disapprove leave application.');
@@ -476,6 +490,18 @@ class Leaves extends CI_Controller
         );
         
         echo json_encode($output);
+    }
+
+    /**
+     * Helper: Send notification to employee by personnel_id
+     */
+    private function _notify_employee($personnel_id, $title, $message, $type = 'info')
+    {
+        $this->db->where('personnel_id', $personnel_id);
+        $account = $this->db->get('user_accounts')->row();
+        if ($account) {
+            $this->userAccountModel->add_notification($account->id, $title, $message, $type);
+        }
     }
 
     /**
